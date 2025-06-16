@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import { Box, Typography, Paper } from '@mui/material';
+import { Box, Typography, Paper, List, ListItem, ListItemText, Divider } from '@mui/material';
 
 const QRScanner = () => {
-  const [scanResult, setScanResult] = useState(null);
+  const [scanResults, setScanResults] = useState([]);
+  const [scanner, setScanner] = useState(null);
 
   useEffect(() => {
-    const scanner = new Html5QrcodeScanner('reader', {
+    const newScanner = new Html5QrcodeScanner('reader', {
       qrbox: {
         width: 250,
         height: 250,
@@ -14,16 +15,26 @@ const QRScanner = () => {
       fps: 5,
     });
 
-    scanner.render(onScanSuccess, onScanError);
+    newScanner.render(onScanSuccess, onScanError);
+    setScanner(newScanner);
 
     return () => {
-      scanner.clear();
+      if (newScanner) {
+        newScanner.clear();
+      }
     };
   }, []);
 
   const onScanSuccess = (result) => {
-    scanner.clear();
-    setScanResult(result);
+    // Add timestamp to the scan result
+    const timestamp = new Date().toLocaleString();
+    const newResult = {
+      id: Date.now(), // unique id for the result
+      data: result,
+      timestamp: timestamp
+    };
+    
+    setScanResults(prevResults => [...prevResults, newResult]);
   };
 
   const onScanError = (error) => {
@@ -37,10 +48,25 @@ const QRScanner = () => {
           Scan QR Code
         </Typography>
         <div id="reader" style={{ width: '100%' }}></div>
-        {scanResult && (
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="h6">Scan Result:</Typography>
-            <Typography>{scanResult}</Typography>
+        
+        {scanResults.length > 0 && (
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Attendance List ({scanResults.length})
+            </Typography>
+            <List>
+              {scanResults.map((result, index) => (
+                <React.Fragment key={result.id}>
+                  <ListItem>
+                    <ListItemText
+                      primary={result.data}
+                      secondary={result.timestamp}
+                    />
+                  </ListItem>
+                  {index < scanResults.length - 1 && <Divider />}
+                </React.Fragment>
+              ))}
+            </List>
           </Box>
         )}
       </Paper>
