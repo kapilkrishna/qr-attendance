@@ -1,36 +1,44 @@
-import React, { useEffect, useState } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import React, { useEffect, useState, useRef } from 'react';
+import { Html5Qrcode } from 'html5-qrcode';
 import { Box, Typography, Paper, List, ListItem, ListItemText, Divider } from '@mui/material';
 
+// QR Scanner component with continuous scanning capability
 const QRScanner = () => {
   const [scanResults, setScanResults] = useState([]);
-  const [scanner, setScanner] = useState(null);
+  const scannerRef = useRef(null);
 
   useEffect(() => {
-    const newScanner = new Html5QrcodeScanner('reader', {
-      qrbox: {
-        width: 250,
-        height: 250,
+    // Initialize the scanner
+    const scanner = new Html5Qrcode("reader");
+    scannerRef.current = scanner;
+
+    // Start scanning
+    scanner.start(
+      { facingMode: "environment" },
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
       },
-      fps: 5,
+      onScanSuccess,
+      onScanError
+    ).catch((err) => {
+      console.error("Failed to start scanner:", err);
     });
 
-    newScanner.render(onScanSuccess, onScanError);
-    setScanner(newScanner);
-
+    // Cleanup function
     return () => {
-      if (newScanner) {
-        newScanner.clear();
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(console.error);
       }
     };
   }, []);
 
-  const onScanSuccess = (result) => {
+  const onScanSuccess = (decodedText) => {
     // Add timestamp to the scan result
     const timestamp = new Date().toLocaleString();
     const newResult = {
-      id: Date.now(), // unique id for the result
-      data: result,
+      id: Date.now(),
+      data: decodedText,
       timestamp: timestamp
     };
     
@@ -38,6 +46,7 @@ const QRScanner = () => {
   };
 
   const onScanError = (error) => {
+    // We can ignore errors as they're usually just failed scan attempts
     console.warn(error);
   };
 
