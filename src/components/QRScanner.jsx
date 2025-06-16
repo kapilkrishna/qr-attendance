@@ -6,24 +6,58 @@ import { Box, Typography, Paper, List, ListItem, ListItemText, Divider } from '@
 const QRScanner = () => {
   const [scanResults, setScanResults] = useState([]);
   const scannerRef = useRef(null);
+  const isScanningRef = useRef(false);
 
   useEffect(() => {
-    // Initialize the scanner
-    const scanner = new Html5Qrcode("reader");
-    scannerRef.current = scanner;
+    const startScanner = async () => {
+      try {
+        const scanner = new Html5Qrcode("reader");
+        scannerRef.current = scanner;
 
-    // Start scanning
-    scanner.start(
-      { facingMode: "environment" },
-      {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-      },
-      onScanSuccess,
-      onScanError
-    ).catch((err) => {
-      console.error("Failed to start scanner:", err);
-    });
+        // Get available cameras
+        const devices = await Html5Qrcode.getCameras();
+        if (devices && devices.length) {
+          // Use the back camera if available, otherwise use the first camera
+          const cameraId = devices.find(device => device.label.toLowerCase().includes('back'))?.id || devices[0].id;
+          
+          await scanner.start(
+            cameraId,
+            {
+              fps: 10,
+              qrbox: { width: 250, height: 250 },
+              aspectRatio: 1.0,
+            },
+            (decodedText) => {
+              // Only process if we're not already scanning
+              if (!isScanningRef.current) {
+                isScanningRef.current = true;
+                
+                // Add the scan result
+                const timestamp = new Date().toLocaleString();
+                setScanResults(prevResults => [...prevResults, {
+                  id: Date.now(),
+                  data: decodedText,
+                  timestamp: timestamp
+                }]);
+
+                // Reset scanning flag after a short delay
+                setTimeout(() => {
+                  isScanningRef.current = false;
+                }, 1000); // Wait 1 second before allowing next scan
+              }
+            },
+            (error) => {
+              // Ignore errors as they're usually just failed scan attempts
+              console.warn(error);
+            }
+          );
+        }
+      } catch (err) {
+        console.error("Failed to start scanner:", err);
+      }
+    };
+
+    startScanner();
 
     // Cleanup function
     return () => {
@@ -32,23 +66,6 @@ const QRScanner = () => {
       }
     };
   }, []);
-
-  const onScanSuccess = (decodedText) => {
-    // Add timestamp to the scan result
-    const timestamp = new Date().toLocaleString();
-    const newResult = {
-      id: Date.now(),
-      data: decodedText,
-      timestamp: timestamp
-    };
-    
-    setScanResults(prevResults => [...prevResults, newResult]);
-  };
-
-  const onScanError = (error) => {
-    // We can ignore errors as they're usually just failed scan attempts
-    console.warn(error);
-  };
 
   return (
     <Box sx={{ maxWidth: 600, mx: 'auto', mt: 4, p: 2 }}>
