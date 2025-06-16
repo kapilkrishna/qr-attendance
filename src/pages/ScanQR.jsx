@@ -10,6 +10,7 @@ export default function ScanQR() {
   const [lastScannedName, setLastScannedName] = useState('');
   const scannerRef = useRef(null);
   const isScanningRef = useRef(false);
+  const scannedNamesRef = useRef(new Set()); // Keep track of scanned names
 
   const stopScanner = async () => {
     if (scannerRef.current) {
@@ -41,15 +42,17 @@ export default function ScanQR() {
             if (!isScanningRef.current) {
               isScanningRef.current = true;
               
-              // Check if the name is already in the list
-              const isNewAttendee = !checkedInList.some(checkIn => checkIn.name === decodedText);
-              
-              if (isNewAttendee) {
+              // Check if the name has already been scanned
+              if (!scannedNamesRef.current.has(decodedText)) {
+                // Add to the set of scanned names
+                scannedNamesRef.current.add(decodedText);
+                
                 // Add the check-in to the list
                 setCheckedInList(list => [...list, { 
                   name: decodedText, 
                   time: new Date() 
                 }]);
+                
                 // Show notification
                 setLastScannedName(decodedText);
                 setShowNotification(true);
