@@ -25,6 +25,7 @@ class PackageBase(BaseModel):
     duration_type: str
     num_classes: Optional[int] = None
     num_weeks: Optional[int] = None
+    class_type_id: Optional[int] = None
 
 class PackageCreate(PackageBase):
     pass

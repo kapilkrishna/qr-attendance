@@ -125,6 +125,11 @@ def check_user_registration_for_class(db: Session, user_id: int, class_id: int):
     active_registrations = get_active_registrations(db, user_id)
     return len(active_registrations) > 0
 
+def get_class_type_name(db: Session, class_type_id: int):
+    """Get class type name by ID"""
+    class_type = db.query(models.ClassType).filter(models.ClassType.id == class_type_id).first()
+    return class_type.name if class_type else "Unknown"
+
 def check_user_registration_for_class_type_and_date(db: Session, user_id: int, class_type_id: int, class_date: date):
     """Check if user is registered for a specific class type and date"""
     # Get user's active registrations
@@ -133,10 +138,15 @@ def check_user_registration_for_class_type_and_date(db: Session, user_id: int, c
     if not active_registrations:
         return False, "No active registrations found"
     
-    # Check if any registration covers this date
+    # Check if any registration covers this date AND class type
     for registration in active_registrations:
+        # Check date range
         if registration.start_date <= class_date <= registration.end_date:
-            return True, "Registered for this date"
+            # Check if package is for the correct class type
+            if registration.package.class_type_id == class_type_id:
+                return True, f"Registered for {registration.package.class_type.name} on this date"
+            else:
+                return False, f"Registered for {registration.package.class_type.name} but attending {get_class_type_name(db, class_type_id)}"
     
     return False, "Not registered for this date"
 

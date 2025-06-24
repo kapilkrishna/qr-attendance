@@ -26,11 +26,13 @@ class Package(Base):
     duration_type = Column(String, nullable=False)  # class, week
     num_classes = Column(Integer, nullable=True)
     num_weeks = Column(Integer, nullable=True)
+    class_type_id = Column(Integer, ForeignKey("class_types.id"), nullable=True)  # Link to class type
     
     # Relationships
     registrations = relationship("Registration", back_populates="package", cascade="all, delete-orphan")
     classes = relationship("Class", back_populates="package", cascade="all, delete-orphan")
     options = relationship("PackageOption", back_populates="package", cascade="all, delete-orphan")
+    class_type = relationship("ClassType")
 
 class Registration(Base):
     __tablename__ = "registrations"
