@@ -238,13 +238,9 @@ def check_user_registration_for_class(db: Session, user_id: int, class_id: int):
     if not class_record:
         return False
     
-    # Check if user has active registration for this package
+    # Check if user has any active registrations (for any package)
     active_registrations = get_active_registrations(db, user_id)
-    for registration in active_registrations:
-        if registration.package_id == class_record.package_id:
-            return True
-    
-    return False
+    return len(active_registrations) > 0
 
 def get_package_options(db: Session, package_id: int):
     return db.query(models.PackageOption).filter(models.PackageOption.package_id == package_id).all()
@@ -278,4 +274,21 @@ def delete_class_type(db: Session, type_id: int):
     if db_type:
         db.delete(db_type)
         db.commit()
-    return db_type 
+    return db_type
+
+def get_class_by_date_and_type(db: Session, date: date, class_type_id: int):
+    return db.query(models.Class).filter(
+        models.Class.date == date,
+        models.Class.class_type_id == class_type_id
+    ).first()
+
+def get_or_create_class_by_date_and_type(db: Session, date: date, class_type_id: int):
+    db_class = get_class_by_date_and_type(db, date, class_type_id)
+    if db_class:
+        return db_class
+    # Create new class
+    new_class = models.Class(date=date, class_type_id=class_type_id)
+    db.add(new_class)
+    db.commit()
+    db.refresh(new_class)
+    return new_class 
