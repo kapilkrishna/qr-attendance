@@ -263,6 +263,29 @@ def get_class_attendance(class_id: int, db: Session = Depends(get_db)):
     attendance = crud.get_class_attendance(db, class_id=class_id)
     return attendance
 
+@app.get("/api/attendance/unchecked/{class_id}", response_model=List[schemas.User])
+def get_unchecked_students(class_id: int, db: Session = Depends(get_db)):
+    """Get all registered students who haven't checked in for a specific class"""
+    return crud.get_unchecked_students_for_class(db, class_id)
+
+@app.post("/api/attendance/manual/{class_id}/{user_id}")
+def manually_mark_attendance(class_id: int, user_id: int, db: Session = Depends(get_db)):
+    """Manually mark attendance for a specific student"""
+    attendance_record, message, is_registered, registration_message = crud.mark_attendance_with_validation(
+        db, class_id, user_id, present=True
+    )
+    
+    if not attendance_record:
+        raise HTTPException(status_code=400, detail=message)
+    
+    return {
+        "success": True,
+        "message": message,
+        "user_name": crud.get_user(db, user_id).name,
+        "is_registered": is_registered,
+        "registration_message": registration_message
+    }
+
 # Payment endpoints
 @app.post("/api/send_invoices")
 def generate_and_send_invoices(month: str, db: Session = Depends(get_db)):

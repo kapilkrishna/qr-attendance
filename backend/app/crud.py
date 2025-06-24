@@ -332,4 +332,42 @@ def get_or_create_class_by_date_and_type(db: Session, date: date, class_type_id:
     db.add(new_class)
     db.commit()
     db.refresh(new_class)
-    return new_class 
+    return new_class
+
+def get_unchecked_students_for_class(db: Session, class_id: int):
+    """Get all registered students who haven't checked in for a specific class"""
+    class_record = get_class(db, class_id)
+    if not class_record:
+        return []
+    
+    # Get all users with active registrations for this class type and date
+    active_registrations = db.query(models.Registration).filter(
+        and_(
+            models.Registration.status == "active",
+            models.Registration.start_date <= class_record.date,
+            models.Registration.end_date >= class_record.date,
+            models.Registration.package.has(class_type_id=class_record.class_type_id)
+        )
+    ).all()
+    
+    # Get user IDs who are registered
+    registered_user_ids = [reg.user_id for reg in active_registrations]
+    
+    # Get user IDs who have already checked in
+    checked_in_user_ids = db.query(models.Attendance.user_id).filter(
+        and_(
+            models.Attendance.class_id == class_id,
+            models.Attendance.present == True
+        )
+    ).all()
+    checked_in_user_ids = [user_id[0] for user_id in checked_in_user_ids]
+    
+    # Get users who are registered but haven't checked in
+    unchecked_user_ids = list(set(registered_user_ids) - set(checked_in_user_ids))
+    
+    # Get full user details
+    unchecked_students = db.query(models.User).filter(
+        models.User.id.in_(unchecked_user_ids)
+    ).all()
+    
+    return unchecked_students 

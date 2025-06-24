@@ -16,10 +16,16 @@ import {
   TextField,
   Grid,
   Card,
-  CardContent
+  CardContent,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  ListItemSecondaryAction,
+  IconButton
 } from '@mui/material';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
+import { CheckCircle } from '@mui/icons-material';
 
 const API_BASE_URL = 'http://localhost:8001/api';
 
@@ -34,7 +40,7 @@ export default function CoachAttendance() {
   const [selectedPackage, setSelectedPackage] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [classes, setClasses] = useState([]);
-  const [selectedClass, setSelectedClass] = useState('');
+  const [selectedClass, setSelectedClass] = useState(null);
   const [date, setDate] = useState('');
   const [classTypes, setClassTypes] = useState([]);
   const [selectedType, setSelectedType] = useState('');
@@ -42,6 +48,11 @@ export default function CoachAttendance() {
   const scannerRef = useRef(null);
   const isScanningRef = useRef(false);
   const scannedNamesRef = useRef(new Set());
+
+  // Manual attendance state
+  const [showManualAttendance, setShowManualAttendance] = useState(false);
+  const [uncheckedStudents, setUncheckedStudents] = useState([]);
+  const [loadingUnchecked, setLoadingUnchecked] = useState(false);
 
   useEffect(() => {
     // Check authentication
@@ -226,6 +237,79 @@ export default function CoachAttendance() {
     }
   };
 
+  const fetchUncheckedStudents = async () => {
+    if (!selectedClass) return;
+    
+    setLoadingUnchecked(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/attendance/unchecked/${selectedClass}`);
+      if (!response.ok) throw new Error('Failed to fetch unchecked students');
+      const students = await response.json();
+      setUncheckedStudents(students);
+    } catch (err) {
+      setError('Failed to fetch unchecked students');
+      console.error('Error fetching unchecked students:', err);
+    } finally {
+      setLoadingUnchecked(false);
+    }
+  };
+
+  const handleManualAttendance = async () => {
+    if (!date || !selectedType) {
+      setError('Please select a date and class type first.');
+      return;
+    }
+    setError('');
+    try {
+      // Get or create class for this date and class type
+      const response = await fetch(`${API_BASE_URL}/classes/by_type`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date, class_type_id: selectedType })
+      });
+      if (!response.ok) throw new Error('Failed to get or create class');
+      const classObj = await response.json();
+      setSelectedClass(classObj.id);
+      setShowManualAttendance(true);
+      fetchUncheckedStudents();
+    } catch (err) {
+      setError('Failed to get or create class.');
+    }
+  };
+
+  const markStudentAttendance = async (userId, userName) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/attendance/manual/${selectedClass}/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!response.ok) throw new Error('Failed to mark attendance');
+      const result = await response.json();
+      
+      if (result.success) {
+        // Add to attendance list
+        setCheckedInList(list => [...list, { 
+          name: result.user_name, 
+          time: new Date(),
+          status: 'Manually Marked',
+          is_registered: result.is_registered,
+          registration_message: result.registration_message
+        }]);
+        
+        // Remove from unchecked list
+        setUncheckedStudents(students => students.filter(s => s.id !== userId));
+        
+        // Show notification
+        setLastScannedName(result.user_name);
+        setShowNotification(true);
+      }
+    } catch (err) {
+      setError('Failed to mark attendance');
+      console.error('Error marking attendance:', err);
+    }
+  };
+
   return (
     <Box sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>
       <Typography variant="h4" gutterBottom>Take Attendance</Typography>
@@ -262,6 +346,16 @@ export default function CoachAttendance() {
           onClick={handleStartScanning}
         >
           Start Scanning
+        </Button>
+        <Button
+          variant="outlined"
+          color="primary"
+          fullWidth
+          sx={{ mt: 1 }}
+          disabled={!date || !selectedType}
+          onClick={handleManualAttendance}
+        >
+          Manual Attendance
         </Button>
       </Paper>
       {isScanning && (
@@ -350,6 +444,48 @@ export default function CoachAttendance() {
           </Box>
         }
       />
+
+      {/* Manual Attendance Modal */}
+      <Dialog 
+        open={showManualAttendance} 
+        onClose={() => setShowManualAttendance(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Manual Attendance - {classTypes.find(t => t.id === selectedType)?.name} on {date}
+        </DialogTitle>
+        <DialogContent>
+          {loadingUnchecked ? (
+            <Typography>Loading unchecked students...</Typography>
+          ) : uncheckedStudents.length === 0 ? (
+            <Typography color="text.secondary">
+              All registered students have been checked in!
+            </Typography>
+          ) : (
+            <List>
+              {uncheckedStudents.map((student) => (
+                <ListItem key={student.id} divider>
+                  <ListItemText
+                    primary={student.name}
+                    secondary={student.email}
+                  />
+                  <ListItemSecondaryAction>
+                    <IconButton
+                      edge="end"
+                      color="primary"
+                      onClick={() => markStudentAttendance(student.id, student.name)}
+                      title="Mark Present"
+                    >
+                      <CheckCircle />
+                    </IconButton>
+                  </ListItemSecondaryAction>
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 } 
