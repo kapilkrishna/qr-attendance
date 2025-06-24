@@ -182,10 +182,9 @@ export default function CoachAttendance() {
   };
 
   useEffect(() => {
-    if (isScanning) {
+    if (isScanning && selectedClass) {
       startScanner();
     }
-
     return () => {
       if (scannerRef.current) {
         scannerRef.current.stop().catch(console.error);
@@ -198,14 +197,26 @@ export default function CoachAttendance() {
     navigate('/coach');
   };
 
-  const handleStartScanning = () => {
+  const handleStartScanning = async () => {
     if (!date || !selectedType) {
       setError('Please select a date and class type.');
       return;
     }
     setError('');
-    setIsScanning(true);
-    // TODO: Start QR scanning logic here
+    try {
+      // Get or create class for this date and class type
+      const response = await fetch(`${API_BASE_URL}/classes/by_type`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date, class_type_id: selectedType })
+      });
+      if (!response.ok) throw new Error('Failed to get or create class');
+      const classObj = await response.json();
+      setSelectedClass(classObj.id);
+      setIsScanning(true);
+    } catch (err) {
+      setError('Failed to get or create class.');
+    }
   };
 
   return (
