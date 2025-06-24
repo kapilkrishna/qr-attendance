@@ -25,7 +25,7 @@ import {
 } from '@mui/material';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle } from '@mui/icons-material';
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 const API_BASE_URL = 'http://localhost:8001/api';
 
@@ -477,7 +477,7 @@ export default function CoachAttendance() {
                       onClick={() => markStudentAttendance(student.id, student.name)}
                       title="Mark Present"
                     >
-                      <CheckCircle />
+                      <CheckCircleIcon />
                     </IconButton>
                   </ListItemSecondaryAction>
                 </ListItem>
