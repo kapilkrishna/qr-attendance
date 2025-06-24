@@ -69,7 +69,8 @@ class Registration(RegistrationBase):
 # Class schemas
 class ClassBase(BaseModel):
     date: date
-    package_id: int
+    package_id: int | None = None
+    class_type_id: int
     cancelled: bool = False
 
 class ClassCreate(ClassBase):
@@ -136,6 +137,8 @@ class AttendanceScanResponse(BaseModel):
     message: str
     user_name: Optional[str] = None
     already_present: bool = False
+    is_registered: Optional[bool] = None
+    registration_message: Optional[str] = None
 
 # Coach authentication
 class CoachAuthRequest(BaseModel):

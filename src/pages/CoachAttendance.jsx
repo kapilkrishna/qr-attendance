@@ -154,7 +154,9 @@ export default function CoachAttendance() {
                     setCheckedInList(list => [...list, { 
                       name: result.user_name, 
                       time: new Date(),
-                      status: result.already_present ? 'Already Present' : 'Checked In'
+                      status: result.already_present ? 'Already Present' : 'Checked In',
+                      is_registered: result.is_registered,
+                      registration_message: result.registration_message
                     }]);
                     
                     setLastScannedName(result.user_name);
@@ -284,8 +286,44 @@ export default function CoachAttendance() {
           {checkedInList.map((checkIn, index) => (
             <ListItem key={index}>
               <ListItemText
-                primary={checkIn.name}
-                secondary={`${checkIn.time.toLocaleString()} - ${checkIn.status}`}
+                primary={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body1">
+                      {checkIn.name}
+                    </Typography>
+                    {checkIn.is_registered !== null && (
+                      <Box
+                        sx={{
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1,
+                          fontSize: '0.75rem',
+                          fontWeight: 'bold',
+                          bgcolor: checkIn.is_registered ? 'success.light' : 'error.light',
+                          color: checkIn.is_registered ? 'success.dark' : 'error.dark',
+                        }}
+                      >
+                        {checkIn.is_registered ? 'REGISTERED' : 'UNREGISTERED'}
+                      </Box>
+                    )}
+                  </Box>
+                }
+                secondary={
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      {checkIn.time.toLocaleString()} - {checkIn.status}
+                    </Typography>
+                    {checkIn.registration_message && (
+                      <Typography 
+                        variant="body2" 
+                        color={checkIn.is_registered ? 'success.main' : 'error.main'}
+                        sx={{ fontStyle: 'italic' }}
+                      >
+                        {checkIn.registration_message}
+                      </Typography>
+                    )}
+                  </Box>
+                }
               />
             </ListItem>
           ))}
@@ -293,9 +331,24 @@ export default function CoachAttendance() {
       </Paper>
       <Snackbar
         open={showNotification}
-        autoHideDuration={3000}
+        autoHideDuration={4000}
         onClose={() => setShowNotification(false)}
-        message={`${lastScannedName} has been added to the attendance list!`}
+        message={
+          <Box>
+            <Typography variant="body1">
+              {lastScannedName} has been added to the attendance list!
+            </Typography>
+            {checkedInList.length > 0 && checkedInList[checkedInList.length - 1].is_registered !== null && (
+              <Typography 
+                variant="body2" 
+                color={checkedInList[checkedInList.length - 1].is_registered ? 'success.light' : 'error.light'}
+                sx={{ fontWeight: 'bold' }}
+              >
+                Status: {checkedInList[checkedInList.length - 1].is_registered ? 'REGISTERED' : 'UNREGISTERED'}
+              </Typography>
+            )}
+          </Box>
+        }
       />
     </Box>
   );

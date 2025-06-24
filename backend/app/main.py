@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status, Path
+from fastapi import FastAPI, Depends, HTTPException, status, Path, Body
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -236,35 +236,25 @@ def mark_attendance_from_qr(request: schemas.AttendanceScanRequest, db: Session 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Check if user is registered for this class
-    if not crud.check_user_registration_for_class(db, user_id, request.class_id):
+    # Mark attendance with validation
+    attendance_record, message, is_registered, registration_message = crud.mark_attendance_with_validation(
+        db, request.class_id, user_id, present=True
+    )
+    
+    if not attendance_record:
         return schemas.AttendanceScanResponse(
             success=False,
-            message="User not registered for this class",
+            message=message,
             user_name=user.name
         )
     
-    # Check if already marked present
-    existing_attendance = db.query(models.Attendance).filter(
-        models.Attendance.class_id == request.class_id,
-        models.Attendance.user_id == user_id
-    ).first()
-    
-    if existing_attendance and existing_attendance.present:
-        return schemas.AttendanceScanResponse(
-            success=True,
-            message="Already marked present",
-            user_name=user.name,
-            already_present=True
-        )
-    
-    # Mark attendance
-    attendance = crud.mark_attendance(db, request.class_id, user_id, present=True)
-    
     return schemas.AttendanceScanResponse(
         success=True,
-        message="Attendance marked successfully",
-        user_name=user.name
+        message=message,
+        user_name=user.name,
+        already_present=message == "Already marked present",
+        is_registered=is_registered,
+        registration_message=registration_message
     )
 
 @app.get("/api/attendance/class/{class_id}", response_model=List[schemas.Attendance])
@@ -327,6 +317,14 @@ def delete_class_type(type_id: int, db: Session = Depends(get_db)):
 @app.get("/")
 def read_root():
     return {"message": "Tennis Academy MVP API is running"}
+
+@app.post("/api/classes/by_type", response_model=schemas.Class)
+def get_or_create_class_by_type(
+    date: date = Body(...),
+    class_type_id: int = Body(...),
+    db: Session = Depends(get_db)
+):
+    return crud.get_or_create_class_by_date_and_type(db, date, class_type_id)
 
 if __name__ == "__main__":
     import uvicorn

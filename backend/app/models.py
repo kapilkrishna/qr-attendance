@@ -51,11 +51,13 @@ class Class(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     date = Column(Date, nullable=False)
-    package_id = Column(Integer, ForeignKey("packages.id"), nullable=False)
+    package_id = Column(Integer, ForeignKey("packages.id"), nullable=True)
+    class_type_id = Column(Integer, ForeignKey("class_types.id"), nullable=False)
     cancelled = Column(Boolean, default=False)
     
     # Relationships
     package = relationship("Package", back_populates="classes")
+    class_type = relationship("ClassType")
     attendance_records = relationship("Attendance", back_populates="class_record")
 
 class Attendance(Base):

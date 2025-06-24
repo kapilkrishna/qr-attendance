@@ -115,8 +115,43 @@ def create_attendance(db: Session, attendance: schemas.AttendanceCreate):
     db.refresh(db_attendance)
     return db_attendance
 
-def mark_attendance(db: Session, class_id: int, user_id: int, present: bool = True):
-    # Check if attendance record already exists
+def check_user_registration_for_class(db: Session, user_id: int, class_id: int):
+    """Check if user is registered for a specific class"""
+    class_record = get_class(db, class_id)
+    if not class_record:
+        return False
+    
+    # Check if user has any active registrations (for any package)
+    active_registrations = get_active_registrations(db, user_id)
+    return len(active_registrations) > 0
+
+def check_user_registration_for_class_type_and_date(db: Session, user_id: int, class_type_id: int, class_date: date):
+    """Check if user is registered for a specific class type and date"""
+    # Get user's active registrations
+    active_registrations = get_active_registrations(db, user_id)
+    
+    if not active_registrations:
+        return False, "No active registrations found"
+    
+    # Check if any registration covers this date
+    for registration in active_registrations:
+        if registration.start_date <= class_date <= registration.end_date:
+            return True, "Registered for this date"
+    
+    return False, "Not registered for this date"
+
+def mark_attendance_with_validation(db: Session, class_id: int, user_id: int, present: bool = True):
+    """Mark attendance with validation and return detailed status"""
+    class_record = get_class(db, class_id)
+    if not class_record:
+        return None, "Class not found"
+    
+    # Check if user is registered for this class type and date
+    is_registered, registration_message = check_user_registration_for_class_type_and_date(
+        db, user_id, class_record.class_type_id, class_record.date
+    )
+    
+    # Check if already marked present
     existing = db.query(models.Attendance).filter(
         and_(
             models.Attendance.class_id == class_id,
@@ -124,12 +159,16 @@ def mark_attendance(db: Session, class_id: int, user_id: int, present: bool = Tr
         )
     ).first()
     
+    if existing and existing.present:
+        return existing, "Already marked present", True, registration_message
+    
+    # Mark attendance (regardless of registration status, but flag it)
     if existing:
         existing.present = present
         existing.checked_in_at = datetime.now()
         db.commit()
         db.refresh(existing)
-        return existing
+        attendance_record = existing
     else:
         attendance = models.Attendance(
             class_id=class_id,
@@ -139,7 +178,9 @@ def mark_attendance(db: Session, class_id: int, user_id: int, present: bool = Tr
         db.add(attendance)
         db.commit()
         db.refresh(attendance)
-        return attendance
+        attendance_record = attendance
+    
+    return attendance_record, "Attendance marked successfully", is_registered, registration_message
 
 # Payment CRUD operations
 def get_payment(db: Session, payment_id: int):
@@ -231,16 +272,6 @@ def generate_monthly_invoices(db: Session, month: str):
 def find_user_by_qr_data(db: Session, qr_data: str):
     """Find user by QR code data (name)"""
     return db.query(models.User).filter(models.User.name == qr_data).first()
-
-def check_user_registration_for_class(db: Session, user_id: int, class_id: int):
-    """Check if user is registered for a specific class"""
-    class_record = get_class(db, class_id)
-    if not class_record:
-        return False
-    
-    # Check if user has any active registrations (for any package)
-    active_registrations = get_active_registrations(db, user_id)
-    return len(active_registrations) > 0
 
 def get_package_options(db: Session, package_id: int):
     return db.query(models.PackageOption).filter(models.PackageOption.package_id == package_id).all()
