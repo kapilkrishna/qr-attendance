@@ -97,9 +97,14 @@ export default function CoachAttendance() {
 
   const stopScanner = async () => {
     if (scannerRef.current) {
-      await scannerRef.current.stop();
-      setIsScanning(false);
+      try {
+        await scannerRef.current.stop();
+      } catch (err) {
+        console.error('Error stopping scanner:', err);
+      }
+      scannerRef.current = null;
     }
+    setIsScanning(false);
   };
 
   const startScanner = async () => {
