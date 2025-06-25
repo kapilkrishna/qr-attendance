@@ -87,7 +87,7 @@ class Class(ClassBase):
 class AttendanceBase(BaseModel):
     class_id: int
     user_id: int
-    present: bool = False
+    status: str = "present"  # present, late, missing
 
 class AttendanceCreate(AttendanceBase):
     pass

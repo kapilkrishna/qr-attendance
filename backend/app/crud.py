@@ -153,7 +153,7 @@ def check_user_registration_for_class_type_and_date(db: Session, user_id: int, c
     
     return False, "Not registered for this date"
 
-def mark_attendance_with_validation(db: Session, class_id: int, user_id: int, present: bool = True):
+def mark_attendance_with_validation(db: Session, class_id: int, user_id: int, status: str = "present"):
     """Mark attendance with validation and return detailed status"""
     class_record = get_class(db, class_id)
     if not class_record:
@@ -172,12 +172,12 @@ def mark_attendance_with_validation(db: Session, class_id: int, user_id: int, pr
         )
     ).first()
     
-    if existing and existing.present:
-        return existing, "Already marked present", True, registration_message
+    if existing and existing.status in ["present", "late"]:
+        return existing, f"Already marked {existing.status}", True, registration_message
     
     # Mark attendance (regardless of registration status, but flag it)
     if existing:
-        existing.present = present
+        existing.status = status
         existing.checked_in_at = datetime.now()
         db.commit()
         db.refresh(existing)
@@ -186,7 +186,7 @@ def mark_attendance_with_validation(db: Session, class_id: int, user_id: int, pr
         attendance = models.Attendance(
             class_id=class_id,
             user_id=user_id,
-            present=present
+            status=status
         )
         db.add(attendance)
         db.commit()
@@ -360,7 +360,7 @@ def get_unchecked_students_for_class(db: Session, class_id: int):
     checked_in_user_ids = db.query(models.Attendance.user_id).filter(
         and_(
             models.Attendance.class_id == class_id,
-            models.Attendance.present == True
+            models.Attendance.status == "present"
         )
     ).all()
     checked_in_user_ids = [user_id[0] for user_id in checked_in_user_ids]
@@ -373,4 +373,143 @@ def get_unchecked_students_for_class(db: Session, class_id: int):
         models.User.id.in_(unchecked_user_ids)
     ).all()
     
-    return unchecked_students 
+    return unchecked_students
+
+def update_attendance_status(db: Session, class_id: int, user_id: int, status: str):
+    """Update attendance status for a specific student"""
+    attendance = db.query(models.Attendance).filter(
+        and_(
+            models.Attendance.class_id == class_id,
+            models.Attendance.user_id == user_id
+        )
+    ).first()
+    
+    if attendance:
+        attendance.status = status
+        attendance.checked_in_at = datetime.now()
+        db.commit()
+        db.refresh(attendance)
+        return attendance
+    else:
+        # Create new attendance record
+        attendance = models.Attendance(
+            class_id=class_id,
+            user_id=user_id,
+            status=status
+        )
+        db.add(attendance)
+        db.commit()
+        db.refresh(attendance)
+        return attendance
+
+def get_comprehensive_attendance_for_class(db: Session, class_id: int):
+    """Get comprehensive attendance data including checked-in and unchecked students"""
+    class_record = get_class(db, class_id)
+    if not class_record:
+        return {"checked_in": [], "unchecked": [], "missing": []}
+    
+    # Get all attendance records for this class
+    attendance_records = db.query(models.Attendance).filter(
+        models.Attendance.class_id == class_id
+    ).all()
+    
+    # Get all users with active registrations for this class type and date
+    active_registrations = db.query(models.Registration).filter(
+        and_(
+            models.Registration.status == "active",
+            models.Registration.start_date <= class_record.date,
+            models.Registration.end_date >= class_record.date
+        )
+    ).all()
+    
+    # Get package IDs for this class type
+    package_ids = [reg.package_id for reg in active_registrations]
+    packages_with_class_type = db.query(models.Package).filter(
+        and_(
+            models.Package.id.in_(package_ids),
+            models.Package.class_type_id == class_record.class_type_id
+        )
+    ).all()
+    valid_package_ids = [p.id for p in packages_with_class_type]
+    
+    # Get registered users for this class
+    registered_users = db.query(models.User).join(models.Registration).filter(
+        and_(
+            models.Registration.package_id.in_(valid_package_ids),
+            models.Registration.status == "active",
+            models.Registration.start_date <= class_record.date,
+            models.Registration.end_date >= class_record.date
+        )
+    ).all()
+    
+    # Organize data
+    checked_in = []
+    unchecked = []
+    missing = []
+    
+    # Process checked-in students
+    for record in attendance_records:
+        user = get_user(db, record.user_id)
+        if user:
+            checked_in.append({
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "status": record.status,
+                "checked_in_at": record.checked_in_at,
+                "is_registered": True
+            })
+    
+    # Process unchecked students
+    checked_in_user_ids = [record.user_id for record in attendance_records]
+    for user in registered_users:
+        if user.id not in checked_in_user_ids:
+            unchecked.append({
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "status": "unchecked",
+                "is_registered": True
+            })
+    
+    # Process missing students (marked as missing)
+    for record in attendance_records:
+        if record.status == "missing":
+            user = get_user(db, record.user_id)
+            if user:
+                missing.append({
+                    "id": user.id,
+                    "name": user.name,
+                    "email": user.email,
+                    "status": record.status,
+                    "checked_in_at": record.checked_in_at,
+                    "is_registered": True
+                })
+    
+    return {
+        "checked_in": checked_in,
+        "unchecked": unchecked,
+        "missing": missing
+    }
+
+def create_user_for_attendance(db: Session, name: str, email: str = None):
+    """Create a new user for manual attendance entry"""
+    # Generate email if not provided
+    if not email:
+        email = f"{name.lower().replace(' ', '.')}@manual.entry"
+    
+    # Check if user already exists
+    existing_user = get_user_by_email(db, email)
+    if existing_user:
+        return existing_user
+    
+    # Create new user
+    user = models.User(
+        name=name,
+        email=email,
+        role="student"
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user 

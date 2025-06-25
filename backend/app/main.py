@@ -272,7 +272,7 @@ def get_unchecked_students(class_id: int, db: Session = Depends(get_db)):
 def manually_mark_attendance(class_id: int, user_id: int, db: Session = Depends(get_db)):
     """Manually mark attendance for a specific student"""
     attendance_record, message, is_registered, registration_message = crud.mark_attendance_with_validation(
-        db, class_id, user_id, present=True
+        db, class_id, user_id, status="present"
     )
     
     if not attendance_record:
@@ -284,6 +284,58 @@ def manually_mark_attendance(class_id: int, user_id: int, db: Session = Depends(
         "user_name": crud.get_user(db, user_id).name,
         "is_registered": is_registered,
         "registration_message": registration_message
+    }
+
+@app.put("/api/attendance/{class_id}/{user_id}/status")
+def update_attendance_status_endpoint(class_id: int, user_id: int, status: str, db: Session = Depends(get_db)):
+    """Update attendance status for a specific student"""
+    if status not in ["present", "late", "missing"]:
+        raise HTTPException(status_code=400, detail="Invalid status. Must be 'present', 'late', or 'missing'")
+    
+    attendance_record = crud.update_attendance_status(db, class_id, user_id, status)
+    if not attendance_record:
+        raise HTTPException(status_code=404, detail="Attendance record not found")
+    
+    user = crud.get_user(db, user_id)
+    return {
+        "success": True,
+        "message": f"Attendance status updated to {status}",
+        "user_name": user.name,
+        "status": status
+    }
+
+@app.get("/api/attendance/comprehensive/{class_id}")
+def get_comprehensive_attendance(class_id: int, db: Session = Depends(get_db)):
+    """Get comprehensive attendance data for a class"""
+    attendance_data = crud.get_comprehensive_attendance_for_class(db, class_id)
+    return attendance_data
+
+@app.post("/api/attendance/add_user/{class_id}")
+def add_user_to_attendance(class_id: int, request: dict, db: Session = Depends(get_db)):
+    """Add a new user and mark their attendance"""
+    name = request.get("name")
+    email = request.get("email")
+    status = request.get("status", "present")
+    
+    if not name:
+        raise HTTPException(status_code=400, detail="Name is required")
+    
+    if status not in ["present", "late", "missing"]:
+        raise HTTPException(status_code=400, detail="Invalid status. Must be 'present', 'late', or 'missing'")
+    
+    # Create or get user
+    user = crud.create_user_for_attendance(db, name, email)
+    
+    # Mark attendance
+    attendance_record = crud.update_attendance_status(db, class_id, user.id, status)
+    
+    return {
+        "success": True,
+        "message": f"User {name} added and marked as {status}",
+        "user_name": user.name,
+        "user_id": user.id,
+        "status": status,
+        "is_registered": False
     }
 
 # Payment endpoints

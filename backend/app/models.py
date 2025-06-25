@@ -68,7 +68,7 @@ class Attendance(Base):
     id = Column(Integer, primary_key=True, index=True)
     class_id = Column(Integer, ForeignKey("classes.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    present = Column(Boolean, default=False)
+    status = Column(String, default="present")  # present, late, missing
     checked_in_at = Column(DateTime, default=func.now())
     
     # Relationships
