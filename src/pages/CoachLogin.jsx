@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE_URL = 'http://localhost:8001/api';
+const API_BASE_URL = 'http://localhost:8000/api';
 
 export default function CoachLogin() {
   const [password, setPassword] = useState('');
@@ -70,7 +70,13 @@ export default function CoachLogin() {
         </Alert>
       )}
 
-      <Card>
+      <Card sx={{
+        background: 'rgba(30, 44, 80, 0.92)',
+        borderRadius: '22px',
+        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+        color: '#fff',
+        mt: 2
+      }}>
         <CardContent>
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
             <TextField
@@ -82,6 +88,16 @@ export default function CoachLogin() {
               margin="normal"
               required
               disabled={loading}
+              InputProps={{
+                sx: {
+                  borderRadius: '12px',
+                  background: 'rgba(44, 62, 100, 0.85)',
+                  color: '#fff',
+                  input: { color: '#fff' },
+                  '& .MuiInputBase-input::placeholder': { color: '#bdbdbd', opacity: 1 }
+                }
+              }}
+              InputLabelProps={{ sx: { color: '#bdbdbd' } }}
             />
             <Button
               type="submit"
@@ -89,7 +105,21 @@ export default function CoachLogin() {
               fullWidth
               size="large"
               disabled={!password.trim() || loading}
-              sx={{ mt: 3 }}
+              sx={{
+                mt: 3,
+                background: 'linear-gradient(90deg, #a259ff 0%, #3a8dde 100%)',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: '1.1rem',
+                borderRadius: '12px',
+                py: 1.2,
+                boxShadow: '0 4px 16px 0 rgba(162,89,255,0.18)',
+                textTransform: 'none',
+                '&:hover': {
+                  background: 'linear-gradient(90deg, #3a8dde 0%, #a259ff 100%)',
+                  boxShadow: '0 8px 24px 0 rgba(162,89,255,0.28)'
+                }
+              }}
             >
               {loading ? <CircularProgress size={24} /> : 'Login'}
             </Button>
@@ -98,18 +128,23 @@ export default function CoachLogin() {
       </Card>
 
       <Box sx={{ mt: 3, textAlign: 'center' }}>
-        <Typography variant="body2" color="text.secondary">
-          Coach Features:
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          • Take attendance using QR codes
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          • Cancel classes
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          • View attendance records
-        </Typography>
+        <Card sx={{
+          background: 'rgba(44, 62, 100, 0.85)',
+          borderRadius: '16px',
+          boxShadow: '0 4px 16px 0 rgba(31, 38, 135, 0.18)',
+          color: '#fff',
+          display: 'inline-block',
+          px: 4, py: 3
+        }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, mb: 1, color: '#fff' }}>
+            Coach Features:
+          </Typography>
+          <Box sx={{ textAlign: 'left', color: '#e0e0e0', fontSize: '1rem', lineHeight: 2 }}>
+            <span style={{ display: 'block' }}>• Take attendance using QR codes</span>
+            <span style={{ display: 'block' }}>• Cancel classes</span>
+            <span style={{ display: 'block' }}>• View attendance records</span>
+          </Box>
+        </Card>
       </Box>
     </Box>
   );

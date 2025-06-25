@@ -20,7 +20,7 @@ import {
   FormControl
 } from '@mui/material';
 
-const API_BASE_URL = 'http://localhost:8001/api';
+const API_BASE_URL = 'http://localhost:8000/api';
 
 export default function Packages() {
   const [packages, setPackages] = useState([]);
@@ -172,68 +172,88 @@ export default function Packages() {
         Choose the perfect package for your tennis journey
       </Typography>
 
-      <Grid container spacing={3}>
-        {packages.map((pkg) => (
-          <Grid item xs={12} md={6} lg={3} key={pkg.id}>
+      <Grid container spacing={4} alignItems="flex-start" sx={{ mt: 2, mb: 4, maxWidth: '900px', mx: 'auto' }}>
+        {packages.map((pkg, idx) => (
+          <Grid item xs={12} sm={8} md={6} key={pkg.id} display="flex" sx={{
+            ml: { md: idx % 2 === 0 ? 0 : 'auto' },
+            mr: { md: idx % 2 === 0 ? 'auto' : 0 },
+            justifyContent: 'flex-start'
+          }}>
             <Card 
               sx={{ 
                 height: '100%', 
                 display: 'flex', 
                 flexDirection: 'column',
-                transition: 'transform 0.2s',
+                background: 'rgba(30, 44, 80, 0.92)',
+                borderRadius: '22px',
+                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+                color: '#fff',
+                p: 3,
+                transition: 'transform 0.2s, box-shadow 0.2s',
                 '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: 4
+                  transform: 'translateY(-6px) scale(1.03)',
+                  boxShadow: '0 16px 40px 0 rgba(31, 38, 135, 0.35)'
                 }
               }}
             >
-              <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                <Typography variant="h6" gutterBottom>
+              <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 0 }}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#fff', fontSize: '1.3rem' }}>
                   {pkg.name}
                 </Typography>
                 <Chip 
                   label={pkg.duration_type === 'class' ? 'Per Class' : 'Per Week'}
-                  color="primary"
-                  size="small"
-                  sx={{ mb: 2, alignSelf: 'flex-start' }}
+                  sx={{ mb: 2, alignSelf: 'flex-start', background: '#a259ff', color: '#fff', fontWeight: 600, fontSize: '0.9rem', borderRadius: '8px' }}
                 />
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2, flexGrow: 1 }}>
+                <Typography variant="body2" sx={{ mb: 2, flexGrow: 1, color: '#e0e0e0', fontWeight: 500 }}>
                   {pkg.description}
                 </Typography>
-                <Box sx={{ mt: 'auto' }}>
-                  <Typography variant="h5" color="primary" gutterBottom>
-                    ${pkg.price}
-                    <Typography component="span" variant="body2" color="text.secondary">
-                      {pkg.duration_type === 'class' ? '/class' : '/week'}
-                    </Typography>
+                <Typography variant="h5" sx={{ fontWeight: 800, color: '#fff', mt: 2, mb: 1 }}>
+                  ${pkg.price}
+                  <Typography component="span" variant="body2" sx={{ color: '#bdbdbd', fontWeight: 400 }}>
+                    /{pkg.duration_type}
                   </Typography>
-                  {pkg.num_classes && (
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      {pkg.num_classes} classes included
-                    </Typography>
-                  )}
-                  {pkg.num_weeks && (
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      {pkg.num_weeks} weeks included
-                    </Typography>
-                  )}
-                  <Button 
-                    variant="contained" 
-                    fullWidth 
-                    onClick={() => handleOpenPurchase(pkg)}
-                    sx={{ mt: 2 }}
-                  >
-                    Buy Now
-                  </Button>
-                </Box>
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#bdbdbd', mb: 2 }}>
+                  {pkg.classes_included} classes included<br/>
+                  {pkg.weeks_included} weeks included
+                </Typography>
+                <Button 
+                  variant="contained" 
+                  fullWidth
+                  sx={{
+                    mt: 'auto',
+                    background: 'linear-gradient(90deg, #a259ff 0%, #3a8dde 100%)',
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: '1.1rem',
+                    borderRadius: '12px',
+                    py: 1.2,
+                    boxShadow: '0 4px 16px 0 rgba(162,89,255,0.18)',
+                    textTransform: 'none',
+                    '&:hover': {
+                      background: 'linear-gradient(90deg, #3a8dde 0%, #a259ff 100%)',
+                      boxShadow: '0 8px 24px 0 rgba(162,89,255,0.28)'
+                    }
+                  }}
+                  onClick={() => handleOpenPurchase(pkg)}
+                >
+                  Buy Now
+                </Button>
               </CardContent>
             </Card>
           </Grid>
         ))}
       </Grid>
 
-      <Dialog open={purchaseOpen} onClose={handleClosePurchase}>
-        <DialogTitle>Purchase Package</DialogTitle>
+      <Dialog open={purchaseOpen} onClose={handleClosePurchase} PaperProps={{
+        sx: {
+          background: 'rgba(30, 44, 80, 0.98)',
+          borderRadius: '22px',
+          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+          color: '#fff',
+        }
+      }}>
+        <DialogTitle sx={{ color: '#fff', fontWeight: 700, fontSize: '1.5rem' }}>Purchase Package</DialogTitle>
         <DialogContent>
           <TextField
             label="Full Name *"
@@ -241,6 +261,16 @@ export default function Packages() {
             margin="normal"
             value={formData.name}
             onChange={e => setFormData({ ...formData, name: e.target.value })}
+            InputProps={{
+              sx: {
+                borderRadius: '12px',
+                background: 'rgba(44, 62, 100, 0.85)',
+                color: '#fff',
+                input: { color: '#fff' },
+                '& .MuiInputBase-input::placeholder': { color: '#bdbdbd', opacity: 1 }
+              }
+            }}
+            InputLabelProps={{ sx: { color: '#bdbdbd' } }}
           />
           <TextField
             label="Email *"
@@ -248,17 +278,40 @@ export default function Packages() {
             margin="normal"
             value={formData.email}
             onChange={e => setFormData({ ...formData, email: e.target.value })}
+            InputProps={{
+              sx: {
+                borderRadius: '12px',
+                background: 'rgba(44, 62, 100, 0.85)',
+                color: '#fff',
+                input: { color: '#fff' },
+                '& .MuiInputBase-input::placeholder': { color: '#bdbdbd', opacity: 1 }
+              }
+            }}
+            InputLabelProps={{ sx: { color: '#bdbdbd' } }}
           />
           {options.length > 0 && (
-            <FormControl fullWidth margin="normal">
+            <FormControl fullWidth margin="normal" sx={{
+              '& .MuiInputBase-root': {
+                borderRadius: '12px',
+                background: 'rgba(44, 62, 100, 0.85)',
+                color: '#fff',
+              },
+              '& .MuiInputLabel-root': { color: '#bdbdbd' },
+              '& .MuiSelect-icon': { color: '#fff' },
+              '& .MuiMenu-paper': {
+                background: 'rgba(44, 62, 100, 0.98)',
+                color: '#fff',
+              }
+            }}>
               <InputLabel>Select {selectedPackage?.duration_type === 'class' ? 'Date' : 'Week'}</InputLabel>
               <Select
                 value={selectedOptionId}
                 label={`Select ${selectedPackage?.duration_type === 'class' ? 'Date' : 'Week'}`}
                 onChange={e => setSelectedOptionId(e.target.value)}
+                sx={{ color: '#fff' }}
               >
                 {options.map(opt => (
-                  <MenuItem key={opt.id} value={opt.id}>{opt.label}</MenuItem>
+                  <MenuItem key={opt.id} value={opt.id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>{opt.label}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -266,12 +319,35 @@ export default function Packages() {
           {purchaseError && <Alert severity="error" sx={{ mt: 2 }}>{purchaseError}</Alert>}
           {success && <Alert severity="success" sx={{ mt: 2 }}>{success}</Alert>}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClosePurchase}>Cancel</Button>
+        <DialogActions sx={{ pb: 2, pr: 3 }}>
+          <Button onClick={handleClosePurchase} sx={{
+            color: '#fff',
+            borderRadius: '12px',
+            fontWeight: 600,
+            px: 3,
+            py: 1.2,
+            background: 'rgba(44, 62, 100, 0.7)',
+            '&:hover': { background: 'rgba(44, 62, 100, 1)' }
+          }}>Cancel</Button>
           <Button
             onClick={handlePurchase}
             variant="contained"
             disabled={submitting || !formData.name || !formData.email || !selectedOptionId}
+            sx={{
+              background: 'linear-gradient(90deg, #a259ff 0%, #3a8dde 100%)',
+              color: '#fff',
+              fontWeight: 700,
+              fontSize: '1.1rem',
+              borderRadius: '12px',
+              py: 1.2,
+              px: 4,
+              boxShadow: '0 4px 16px 0 rgba(162,89,255,0.18)',
+              textTransform: 'none',
+              '&:hover': {
+                background: 'linear-gradient(90deg, #3a8dde 0%, #a259ff 100%)',
+                boxShadow: '0 8px 24px 0 rgba(162,89,255,0.28)'
+              }
+            }}
           >
             Purchase
           </Button>

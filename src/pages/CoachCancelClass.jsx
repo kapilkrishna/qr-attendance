@@ -20,7 +20,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE_URL = 'http://localhost:8001/api';
+const API_BASE_URL = 'http://localhost:8000/api';
 
 export default function CoachCancelClass() {
   const navigate = useNavigate();
@@ -152,27 +152,31 @@ export default function CoachCancelClass() {
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card sx={{
+            background: 'rgba(30, 44, 80, 0.92)',
+            borderRadius: '22px',
+            boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+            color: '#fff',
+          }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ color: '#fff', fontWeight: 700 }}>
                 Select Class to Cancel
               </Typography>
-              
-              <FormControl fullWidth sx={{ mb: 2 }}>
+              <FormControl fullWidth sx={{ mb: 2, '& .MuiInputBase-root': { borderRadius: '12px', background: 'rgba(44, 62, 100, 0.85)', color: '#fff' }, '& .MuiInputLabel-root': { color: '#bdbdbd' }, '& .MuiSelect-icon': { color: '#fff' } }}>
                 <InputLabel>Package</InputLabel>
                 <Select
                   value={selectedPackage}
                   onChange={(e) => setSelectedPackage(e.target.value)}
                   label="Package"
+                  sx={{ color: '#fff' }}
                 >
                   {packages.map((pkg) => (
-                    <MenuItem key={pkg.id} value={pkg.id}>
+                    <MenuItem key={pkg.id} value={pkg.id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>
                       {pkg.name}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
-
               <TextField
                 fullWidth
                 label="Date"
@@ -180,34 +184,42 @@ export default function CoachCancelClass() {
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 sx={{ mb: 2 }}
-                InputLabelProps={{ shrink: true }}
+                InputLabelProps={{ shrink: true, sx: { color: '#bdbdbd' } }}
+                InputProps={{
+                  sx: {
+                    borderRadius: '12px',
+                    background: 'rgba(44, 62, 100, 0.85)',
+                    color: '#fff',
+                    input: { color: '#fff' },
+                    '& .MuiInputBase-input::placeholder': { color: '#bdbdbd', opacity: 1 }
+                  }
+                }}
               />
-
-              <FormControl fullWidth sx={{ mb: 2 }}>
+              <FormControl fullWidth sx={{ mb: 2, '& .MuiInputBase-root': { borderRadius: '12px', background: 'rgba(44, 62, 100, 0.85)', color: '#fff' }, '& .MuiInputLabel-root': { color: '#bdbdbd' }, '& .MuiSelect-icon': { color: '#fff' } }}>
                 <InputLabel>Class</InputLabel>
                 <Select
                   value={selectedClass}
                   onChange={(e) => setSelectedClass(e.target.value)}
                   label="Class"
                   disabled={loading || classes.length === 0}
+                  sx={{ color: '#fff' }}
                 >
                   {classes.map((cls) => (
-                    <MenuItem key={cls.id} value={cls.id}>
+                    <MenuItem key={cls.id} value={cls.id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>
                       {cls.date} - {cls.cancelled ? 'CANCELLED' : 'Active'}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
-
               {selectedClass && getSelectedClassInfo() && (
-                <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-                  <Typography variant="subtitle2" gutterBottom>
+                <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(44, 62, 100, 0.85)', borderRadius: 2 }}>
+                  <Typography variant="subtitle2" gutterBottom sx={{ color: '#fff', fontWeight: 600 }}>
                     Class Information:
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: '#e0e0e0' }}>
                     <strong>Date:</strong> {getSelectedClassInfo().date}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: '#e0e0e0' }}>
                     <strong>Status:</strong> 
                     <Chip 
                       label={getSelectedClassInfo().cancelled ? 'CANCELLED' : 'Active'} 
@@ -218,28 +230,44 @@ export default function CoachCancelClass() {
                   </Typography>
                 </Box>
               )}
-
               <Button 
                 variant="contained" 
                 color="error"
                 onClick={handleCancelClass}
                 fullWidth
                 disabled={submitting || !selectedClass || getSelectedClassInfo()?.cancelled}
-                sx={{ mt: 2 }}
+                sx={{
+                  mt: 2,
+                  background: 'linear-gradient(90deg, #ff5f6d 0%, #ffc371 100%)',
+                  color: '#fff',
+                  fontWeight: 700,
+                  fontSize: '1.1rem',
+                  borderRadius: '12px',
+                  py: 1.2,
+                  boxShadow: '0 4px 16px 0 rgba(255,95,109,0.18)',
+                  textTransform: 'none',
+                  '&:hover': {
+                    background: 'linear-gradient(90deg, #ffc371 0%, #ff5f6d 100%)',
+                    boxShadow: '0 8px 24px 0 rgba(255,95,109,0.28)'
+                  }
+                }}
               >
                 {submitting ? <CircularProgress size={24} /> : 'Cancel Class'}
               </Button>
             </CardContent>
           </Card>
         </Grid>
-
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card sx={{
+            background: 'rgba(30, 44, 80, 0.92)',
+            borderRadius: '22px',
+            boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+            color: '#fff',
+          }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ color: '#fff', fontWeight: 700 }}>
                 Available Classes
               </Typography>
-              
               {loading ? (
                 <Box display="flex" justifyContent="center" p={2}>
                   <CircularProgress />
@@ -249,7 +277,7 @@ export default function CoachCancelClass() {
                   {classes.map((cls) => (
                     <ListItem key={cls.id}>
                       <ListItemText
-                        primary={cls.date}
+                        primary={<span style={{ color: '#fff' }}>{cls.date}</span>}
                         secondary={
                           <Box>
                             <Chip 
@@ -264,9 +292,8 @@ export default function CoachCancelClass() {
                   ))}
                 </List>
               )}
-              
               {classes.length === 0 && !loading && (
-                <Typography variant="body2" color="text.secondary" align="center">
+                <Typography variant="body2" sx={{ color: '#bdbdbd' }} align="center">
                   No classes found for the selected date and package.
                 </Typography>
               )}

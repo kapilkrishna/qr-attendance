@@ -27,7 +27,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
-const API_BASE_URL = 'http://localhost:8001/api';
+const API_BASE_URL = 'http://localhost:8000/api';
 
 export default function CoachAttendance() {
   const navigate = useNavigate();
@@ -313,26 +313,58 @@ export default function CoachAttendance() {
   return (
     <Box sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>
       <Typography variant="h4" gutterBottom>Take Attendance</Typography>
-      <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>Class Selection</Typography>
-        <FormControl fullWidth margin="normal">
+      <Paper elevation={3} sx={{ 
+        p: 3, mb: 3, 
+        background: 'rgba(30, 44, 80, 0.92)',
+        borderRadius: '22px',
+        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+        color: '#fff',
+      }}>
+        <Typography variant="h6" gutterBottom sx={{ color: '#fff', fontWeight: 700 }}>Class Selection</Typography>
+        <FormControl fullWidth margin="normal" sx={{
+          '& .MuiInputBase-root': {
+            borderRadius: '12px',
+            background: 'rgba(44, 62, 100, 0.85)',
+            color: '#fff',
+          },
+          '& .MuiInputLabel-root': { color: '#bdbdbd' },
+          '& .MuiSelect-icon': { color: '#fff' },
+        }}>
           <TextField
             label="Date"
             type="date"
             value={date}
             onChange={e => setDate(e.target.value)}
-            InputLabelProps={{ shrink: true }}
+            InputLabelProps={{ shrink: true, sx: { color: '#bdbdbd' } }}
+            InputProps={{
+              sx: {
+                borderRadius: '12px',
+                background: 'rgba(44, 62, 100, 0.85)',
+                color: '#fff',
+                input: { color: '#fff' },
+                '& .MuiInputBase-input::placeholder': { color: '#bdbdbd', opacity: 1 }
+              }
+            }}
           />
         </FormControl>
-        <FormControl fullWidth margin="normal">
+        <FormControl fullWidth margin="normal" sx={{
+          '& .MuiInputBase-root': {
+            borderRadius: '12px',
+            background: 'rgba(44, 62, 100, 0.85)',
+            color: '#fff',
+          },
+          '& .MuiInputLabel-root': { color: '#bdbdbd' },
+          '& .MuiSelect-icon': { color: '#fff' },
+        }}>
           <InputLabel>Class Type</InputLabel>
           <Select
             value={selectedType}
             label="Class Type"
             onChange={e => setSelectedType(e.target.value)}
+            sx={{ color: '#fff' }}
           >
             {classTypes.map(type => (
-              <MenuItem key={type.id} value={type.id}>{type.name}</MenuItem>
+              <MenuItem key={type.id} value={type.id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>{type.name}</MenuItem>
             ))}
           </Select>
         </FormControl>
@@ -341,7 +373,21 @@ export default function CoachAttendance() {
           variant="contained"
           color="primary"
           fullWidth
-          sx={{ mt: 2 }}
+          sx={{
+            mt: 2,
+            background: 'linear-gradient(90deg, #a259ff 0%, #3a8dde 100%)',
+            color: '#fff',
+            fontWeight: 700,
+            fontSize: '1.1rem',
+            borderRadius: '12px',
+            py: 1.2,
+            boxShadow: '0 4px 16px 0 rgba(162,89,255,0.18)',
+            textTransform: 'none',
+            '&:hover': {
+              background: 'linear-gradient(90deg, #3a8dde 0%, #a259ff 100%)',
+              boxShadow: '0 8px 24px 0 rgba(162,89,255,0.28)'
+            }
+          }}
           disabled={!date || !selectedType}
           onClick={handleStartScanning}
         >
@@ -351,7 +397,17 @@ export default function CoachAttendance() {
           variant="outlined"
           color="primary"
           fullWidth
-          sx={{ mt: 1 }}
+          sx={{
+            mt: 1,
+            color: '#fff',
+            borderRadius: '12px',
+            fontWeight: 600,
+            px: 3,
+            py: 1.2,
+            borderColor: '#a259ff',
+            background: 'rgba(44, 62, 100, 0.7)',
+            '&:hover': { background: 'rgba(44, 62, 100, 1)' }
+          }}
           disabled={!date || !selectedType}
           onClick={handleManualAttendance}
         >
@@ -359,7 +415,13 @@ export default function CoachAttendance() {
         </Button>
       </Paper>
       {isScanning && (
-        <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+        <Paper elevation={3} sx={{ 
+          p: 3, mb: 3, 
+          background: 'rgba(30, 44, 80, 0.92)',
+          borderRadius: '22px',
+          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+          color: '#fff',
+        }}>
           <Box sx={{ maxWidth: 400, mx: 'auto' }}>
             <div id="reader"></div>
           </Box>
@@ -368,14 +430,34 @@ export default function CoachAttendance() {
               variant="contained" 
               color="error"
               onClick={stopScanner}
+              sx={{
+                background: 'linear-gradient(90deg, #ff5f6d 0%, #ffc371 100%)',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: '1.1rem',
+                borderRadius: '12px',
+                py: 1.2,
+                boxShadow: '0 4px 16px 0 rgba(255,95,109,0.18)',
+                textTransform: 'none',
+                '&:hover': {
+                  background: 'linear-gradient(90deg, #ffc371 0%, #ff5f6d 100%)',
+                  boxShadow: '0 8px 24px 0 rgba(255,95,109,0.28)'
+                }
+              }}
             >
               Stop Scanning
             </Button>
           </Box>
         </Paper>
       )}
-      <Paper elevation={3} sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>Attendance List ({checkedInList.length})</Typography>
+      <Paper elevation={3} sx={{ 
+        p: 3, 
+        background: 'rgba(30, 44, 80, 0.92)',
+        borderRadius: '22px',
+        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+        color: '#fff',
+      }}>
+        <Typography variant="h6" gutterBottom sx={{ color: '#fff', fontWeight: 700 }}>Attendance List ({checkedInList.length})</Typography>
         <List>
           {checkedInList.map((checkIn, index) => (
             <ListItem key={index}>

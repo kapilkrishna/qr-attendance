@@ -44,10 +44,13 @@ def get_user_registrations(db: Session, user_id: int):
     return db.query(models.Registration).filter(models.Registration.user_id == user_id).all()
 
 def get_active_registrations(db: Session, user_id: int):
+    today = date.today()
     return db.query(models.Registration).filter(
         and_(
             models.Registration.user_id == user_id,
-            models.Registration.status == "active"
+            models.Registration.status == "active",
+            models.Registration.start_date <= today,
+            models.Registration.end_date >= today
         )
     ).all()
 

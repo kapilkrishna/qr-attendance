@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box, TextField, Button, Paper, Typography, Alert, CircularProgress } from '@mui/material';
 import { QRCodeSVG } from 'qrcode.react';
 
-const API_BASE_URL = 'http://localhost:8001/api';
+const API_BASE_URL = 'http://localhost:8000/api';
 
 export default function GenerateQR() {
   const [name, setName] = useState('');
@@ -59,7 +59,14 @@ export default function GenerateQR() {
         </Alert>
       )}
 
-      <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+      <Paper elevation={3} sx={{ 
+        p: 4, mb: 3, 
+        background: 'rgba(30, 44, 80, 0.92)',
+        borderRadius: '22px',
+        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+        color: '#fff',
+        display: 'flex', flexDirection: 'column', alignItems: 'center'
+      }}>
         <TextField
           fullWidth
           label="Enter your full name"
@@ -67,20 +74,52 @@ export default function GenerateQR() {
           onChange={(e) => setName(e.target.value)}
           margin="normal"
           disabled={loading}
+          InputProps={{
+            sx: {
+              borderRadius: '12px',
+              background: 'rgba(44, 62, 100, 0.85)',
+              color: '#fff',
+              input: { color: '#fff' },
+              '& .MuiInputBase-input::placeholder': { color: '#bdbdbd', opacity: 1 }
+            }
+          }}
+          InputLabelProps={{ sx: { color: '#bdbdbd' } }}
         />
         <Button
           variant="contained"
           onClick={handleGenerate}
           disabled={!name.trim() || loading}
-          sx={{ mt: 2 }}
+          sx={{
+            mt: 2,
+            width: '100%',
+            background: 'linear-gradient(90deg, #a259ff 0%, #3a8dde 100%)',
+            color: '#fff',
+            fontWeight: 700,
+            fontSize: '1.1rem',
+            borderRadius: '12px',
+            py: 1.2,
+            boxShadow: '0 4px 16px 0 rgba(162,89,255,0.18)',
+            textTransform: 'none',
+            '&:hover': {
+              background: 'linear-gradient(90deg, #3a8dde 0%, #a259ff 100%)',
+              boxShadow: '0 8px 24px 0 rgba(162,89,255,0.28)'
+            }
+          }}
         >
           {loading ? <CircularProgress size={24} /> : 'Generate QR Code'}
         </Button>
       </Paper>
       
       {showQR && userInfo && (
-        <Paper elevation={3} sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
+        <Paper elevation={3} sx={{ 
+          p: 4, 
+          background: 'rgba(30, 44, 80, 0.92)',
+          borderRadius: '22px',
+          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+          color: '#fff',
+          mt: 2
+        }}>
+          <Typography variant="h6" gutterBottom sx={{ color: '#fff', fontWeight: 700 }}>
             Your QR Code
           </Typography>
           
@@ -93,22 +132,22 @@ export default function GenerateQR() {
             />
           </Box>
           
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          <Typography variant="body2" sx={{ color: '#bdbdbd', mb: 2 }}>
             Show this QR code to check in for your tennis classes
           </Typography>
 
-          <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-            <Typography variant="subtitle1" gutterBottom>
+          <Box sx={{ mt: 3, p: 2, bgcolor: 'rgba(44, 62, 100, 0.85)', borderRadius: 2 }}>
+            <Typography variant="subtitle1" gutterBottom sx={{ color: '#fff', fontWeight: 600 }}>
               Student Information
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: '#e0e0e0' }}>
               <strong>Name:</strong> {userInfo.name}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: '#e0e0e0' }}>
               <strong>Email:</strong> {userInfo.email}
             </Typography>
             {userInfo.registrations && userInfo.registrations.length > 0 && (
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: '#e0e0e0' }}>
                 <strong>Active Packages:</strong> {userInfo.registrations.map(r => r.package_name).join(', ')}
               </Typography>
             )}
