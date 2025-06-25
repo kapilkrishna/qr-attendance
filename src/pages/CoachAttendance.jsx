@@ -21,11 +21,14 @@ import {
   DialogTitle,
   DialogContent,
   ListItemSecondaryAction,
-  IconButton
+  IconButton,
+  Chip
 } from '@mui/material';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ScheduleIcon from "@mui/icons-material/Schedule";
+import SearchIcon from "@mui/icons-material/Search";
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -48,6 +51,11 @@ export default function CoachAttendance() {
   const scannerRef = useRef(null);
   const isScanningRef = useRef(false);
   const scannedNamesRef = useRef(new Set());
+
+  // New state for the enhanced attendance system
+  const [allStudents, setAllStudents] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Manual attendance state
   const [showManualAttendance, setShowManualAttendance] = useState(false);
@@ -77,6 +85,13 @@ export default function CoachAttendance() {
       .catch(() => setClassTypes([]));
   }, []);
 
+  // New effect to fetch students when date and class type are selected
+  useEffect(() => {
+    if (date && selectedType) {
+      fetchAllStudentsForClass();
+    }
+  }, [date, selectedType]);
+
   const fetchPackages = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/packages`);
@@ -103,6 +118,47 @@ export default function CoachAttendance() {
     } catch (err) {
       setError('Failed to load classes');
       console.error('Error fetching classes:', err);
+    }
+  };
+
+  // New function to fetch all students for a class type and date
+  const fetchAllStudentsForClass = async () => {
+    setLoadingStudents(true);
+    try {
+      // First get or create the class
+      const classResponse = await fetch(`${API_BASE_URL}/classes/by_type`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date, class_type_id: selectedType })
+      });
+      
+      if (!classResponse.ok) throw new Error('Failed to get or create class');
+      const classObj = await classResponse.json();
+      setSelectedClass(classObj.id);
+
+      // Then get comprehensive attendance data
+      const attendanceResponse = await fetch(`${API_BASE_URL}/attendance/comprehensive/${classObj.id}`);
+      if (!attendanceResponse.ok) throw new Error('Failed to fetch attendance data');
+      const attendanceData = await attendanceResponse.json();
+
+      // Combine all students and sort them (unchecked first, then checked in)
+      const allStudentsData = [
+        ...attendanceData.unchecked.map(student => ({ ...student, status: 'unchecked' })),
+        ...attendanceData.checked_in.map(student => ({ ...student, status: student.status }))
+      ];
+
+      setAllStudents(allStudentsData);
+      setCheckedInList(attendanceData.checked_in.map(student => ({
+        name: student.name,
+        time: new Date(student.checked_in_at),
+        status: student.status === 'present' ? 'Present' : student.status === 'late' ? 'Late' : 'Checked In',
+        is_registered: student.is_registered
+      })));
+    } catch (err) {
+      setError('Failed to fetch students');
+      console.error('Error fetching students:', err);
+    } finally {
+      setLoadingStudents(false);
     }
   };
 
@@ -172,6 +228,9 @@ export default function CoachAttendance() {
                     
                     setLastScannedName(result.user_name);
                     setShowNotification(true);
+                    
+                    // Refresh the student list
+                    fetchAllStudentsForClass();
                   } else {
                     setError(result.message);
                   }
@@ -221,20 +280,7 @@ export default function CoachAttendance() {
       return;
     }
     setError('');
-    try {
-      // Get or create class for this date and class type
-      const response = await fetch(`${API_BASE_URL}/classes/by_type`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date, class_type_id: selectedType })
-      });
-      if (!response.ok) throw new Error('Failed to get or create class');
-      const classObj = await response.json();
-      setSelectedClass(classObj.id);
-      setIsScanning(true);
-    } catch (err) {
-      setError('Failed to get or create class.');
-    }
+    setIsScanning(true);
   };
 
   const fetchUncheckedStudents = async () => {
@@ -277,6 +323,123 @@ export default function CoachAttendance() {
     }
   };
 
+  // New function to mark student as present
+  const markStudentPresent = async (userId, userName) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/attendance/manual/${selectedClass}/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!response.ok) throw new Error('Failed to mark attendance');
+      const result = await response.json();
+      
+      if (result.success) {
+        // Add to attendance list
+        setCheckedInList(list => [...list, { 
+          name: result.user_name, 
+          time: new Date(),
+          status: 'Present',
+          is_registered: result.is_registered,
+          registration_message: result.registration_message
+        }]);
+        
+        // Show notification
+        setLastScannedName(result.user_name);
+        setShowNotification(true);
+        
+        // Refresh the student list
+        fetchAllStudentsForClass();
+      }
+    } catch (err) {
+      setError('Failed to mark attendance');
+      console.error('Error marking attendance:', err);
+    }
+  };
+
+  // New function to mark student as late
+  const markStudentLate = async (userId, userName) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/attendance/${selectedClass}/${userId}/status?status=late`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!response.ok) throw new Error('Failed to mark attendance');
+      const result = await response.json();
+      
+      if (result.success) {
+        // Add to attendance list
+        setCheckedInList(list => [...list, { 
+          name: result.user_name, 
+          time: new Date(),
+          status: 'Late',
+          is_registered: true
+        }]);
+        
+        // Show notification
+        setLastScannedName(result.user_name);
+        setShowNotification(true);
+        
+        // Refresh the student list
+        fetchAllStudentsForClass();
+      }
+    } catch (err) {
+      setError('Failed to mark attendance');
+      console.error('Error marking attendance:', err);
+    }
+  };
+
+  // New function to mark student as absent
+  const markStudentAbsent = async (userId, userName) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/attendance/${selectedClass}/${userId}/status?status=missing`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!response.ok) throw new Error('Failed to mark attendance');
+      const result = await response.json();
+      
+      if (result.success) {
+        // Show notification
+        setLastScannedName(result.user_name);
+        setShowNotification(true);
+        
+        // Refresh the student list
+        fetchAllStudentsForClass();
+      }
+    } catch (err) {
+      setError('Failed to mark attendance');
+      console.error('Error marking attendance:', err);
+    }
+  };
+
+  // New function to update student status
+  const updateStudentStatus = async (userId, status) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/attendance/${selectedClass}/${userId}/status?status=${status}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!response.ok) throw new Error('Failed to update attendance');
+      const result = await response.json();
+      
+      if (result.success) {
+        // Show notification
+        setLastScannedName(result.user_name);
+        setShowNotification(true);
+        
+        // Refresh the student list
+        fetchAllStudentsForClass();
+      }
+    } catch (err) {
+      setError('Failed to update attendance');
+      console.error('Error updating attendance:', err);
+    }
+  };
+
   const markStudentAttendance = async (userId, userName) => {
     try {
       const response = await fetch(`${API_BASE_URL}/attendance/manual/${selectedClass}/${userId}`, {
@@ -310,8 +473,14 @@ export default function CoachAttendance() {
     }
   };
 
+  // Filter students based on search term
+  const filteredStudents = allStudents.filter(student =>
+    student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    student.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <Box sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>
+    <Box sx={{ maxWidth: 800, mx: 'auto', mt: 4 }}>
       <Typography variant="h4" gutterBottom>Take Attendance</Typography>
       <Paper elevation={3} sx={{ 
         p: 3, mb: 3, 
@@ -391,7 +560,7 @@ export default function CoachAttendance() {
           disabled={!date || !selectedType}
           onClick={handleStartScanning}
         >
-          Start Scanning
+          Start QR Scanning
         </Button>
         <Button
           variant="outlined"
@@ -414,6 +583,8 @@ export default function CoachAttendance() {
           Manual Attendance
         </Button>
       </Paper>
+
+      {/* QR Scanning Section */}
       {isScanning && (
         <Paper elevation={3} sx={{ 
           p: 3, mb: 3, 
@@ -450,61 +621,211 @@ export default function CoachAttendance() {
           </Box>
         </Paper>
       )}
-      <Paper elevation={3} sx={{ 
-        p: 3, 
-        background: 'rgba(30, 44, 80, 0.92)',
-        borderRadius: '22px',
-        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
-        color: '#fff',
-      }}>
-        <Typography variant="h6" gutterBottom sx={{ color: '#fff', fontWeight: 700 }}>Attendance List ({checkedInList.length})</Typography>
-        <List>
-          {checkedInList.map((checkIn, index) => (
-            <ListItem key={index}>
-              <ListItemText
-                primary={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="body1">
-                      {checkIn.name}
-                    </Typography>
-                    {checkIn.is_registered !== null && (
-                      <Box
-                        sx={{
-                          px: 1,
-                          py: 0.5,
-                          borderRadius: 1,
-                          fontSize: '0.75rem',
-                          fontWeight: 'bold',
-                          bgcolor: checkIn.is_registered ? 'success.light' : 'error.light',
-                          color: checkIn.is_registered ? 'success.dark' : 'error.dark',
-                        }}
-                      >
-                        {checkIn.is_registered ? 'REGISTERED' : 'UNREGISTERED'}
+
+      {/* Student List Section */}
+      {date && selectedType && (
+        <Paper elevation={3} sx={{ 
+          p: 3, mb: 3, 
+          background: 'rgba(30, 44, 80, 0.92)',
+          borderRadius: '22px',
+          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+          color: '#fff',
+        }}>
+          <Typography variant="h6" gutterBottom sx={{ color: '#fff', fontWeight: 700 }}>
+            Students - {classTypes.find(t => t.id === selectedType)?.name} on {date}
+          </Typography>
+          
+          {/* Search Bar */}
+          <TextField
+            fullWidth
+            variant="outlined"
+            placeholder="Search students..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{
+              mb: 2,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '12px',
+                background: 'rgba(44, 62, 100, 0.85)',
+                color: '#fff',
+                '& fieldset': { borderColor: '#a259ff' },
+                '&:hover fieldset': { borderColor: '#3a8dde' },
+                '&.Mui-focused fieldset': { borderColor: '#a259ff' }
+              },
+              '& .MuiInputBase-input': { color: '#fff' },
+              '& .MuiInputBase-input::placeholder': { color: '#bdbdbd', opacity: 1 }
+            }}
+            InputProps={{
+              startAdornment: <SearchIcon sx={{ color: '#bdbdbd', mr: 1 }} />
+            }}
+          />
+
+          {loadingStudents ? (
+            <Typography sx={{ textAlign: 'center', color: '#bdbdbd' }}>Loading students...</Typography>
+          ) : filteredStudents.length === 0 ? (
+            <Typography sx={{ textAlign: 'center', color: '#bdbdbd' }}>
+              {searchTerm ? 'No students found matching your search.' : 'No students registered for this class.'}
+            </Typography>
+          ) : (
+            <List>
+              {filteredStudents.map((student) => (
+                <ListItem 
+                  key={student.id} 
+                  sx={{ 
+                    mb: 1, 
+                    borderRadius: '12px',
+                    background: student.status === 'unchecked' 
+                      ? 'rgba(44, 62, 100, 0.6)' 
+                      : 'rgba(44, 62, 100, 0.3)',
+                    border: student.status === 'unchecked' ? '1px solid #a259ff' : '1px solid transparent'
+                  }}
+                >
+                  <ListItemText
+                    primary={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="body1" sx={{ color: '#fff', fontWeight: 500 }}>
+                          {student.name}
+                        </Typography>
+                        {student.status !== 'unchecked' && (
+                          <Chip 
+                            label={student.status === 'present' ? 'Present' : student.status === 'late' ? 'Late' : student.status === 'missing' ? 'Absent' : student.status} 
+                            size="small"
+                            sx={{
+                              bgcolor: student.status === 'present' ? '#4caf50' : student.status === 'late' ? '#ff9800' : '#f44336',
+                              color: '#fff',
+                              fontWeight: 'bold'
+                            }}
+                          />
+                        )}
+                      </Box>
+                    }
+                    secondary={
+                      <Typography variant="body2" sx={{ color: '#bdbdbd' }}>
+                        {student.email}
+                      </Typography>
+                    }
+                  />
+                  <ListItemSecondaryAction>
+                    {student.status === 'unchecked' ? (
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          sx={{
+                            bgcolor: '#4caf50',
+                            color: '#fff',
+                            fontWeight: 'bold',
+                            borderRadius: '8px',
+                            px: 2,
+                            '&:hover': { bgcolor: '#45a049' }
+                          }}
+                          onClick={() => markStudentPresent(student.id, student.name)}
+                        >
+                          Present
+                        </Button>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          sx={{
+                            bgcolor: '#ff9800',
+                            color: '#fff',
+                            fontWeight: 'bold',
+                            borderRadius: '8px',
+                            px: 2,
+                            '&:hover': { bgcolor: '#f57c00' }
+                          }}
+                          onClick={() => markStudentLate(student.id, student.name)}
+                        >
+                          Late
+                        </Button>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          sx={{
+                            bgcolor: '#f44336',
+                            color: '#fff',
+                            fontWeight: 'bold',
+                            borderRadius: '8px',
+                            px: 2,
+                            '&:hover': { bgcolor: '#d32f2f' }
+                          }}
+                          onClick={() => markStudentAbsent(student.id, student.name)}
+                        >
+                          Absent
+                        </Button>
+                      </Box>
+                    ) : (
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          sx={{
+                            borderColor: '#4caf50',
+                            color: '#4caf50',
+                            fontWeight: 'bold',
+                            borderRadius: '8px',
+                            px: 2,
+                            '&:hover': { 
+                              borderColor: '#45a049',
+                              color: '#45a049',
+                              bgcolor: 'rgba(76, 175, 80, 0.1)'
+                            }
+                          }}
+                          onClick={() => updateStudentStatus(student.id, 'present')}
+                          disabled={student.status === 'present'}
+                        >
+                          Present
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          sx={{
+                            borderColor: '#ff9800',
+                            color: '#ff9800',
+                            fontWeight: 'bold',
+                            borderRadius: '8px',
+                            px: 2,
+                            '&:hover': { 
+                              borderColor: '#f57c00',
+                              color: '#f57c00',
+                              bgcolor: 'rgba(255, 152, 0, 0.1)'
+                            }
+                          }}
+                          onClick={() => updateStudentStatus(student.id, 'late')}
+                          disabled={student.status === 'late'}
+                        >
+                          Late
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          sx={{
+                            borderColor: '#f44336',
+                            color: '#f44336',
+                            fontWeight: 'bold',
+                            borderRadius: '8px',
+                            px: 2,
+                            '&:hover': { 
+                              borderColor: '#d32f2f',
+                              color: '#d32f2f',
+                              bgcolor: 'rgba(244, 67, 54, 0.1)'
+                            }
+                          }}
+                          onClick={() => updateStudentStatus(student.id, 'missing')}
+                          disabled={student.status === 'missing'}
+                        >
+                          Absent
+                        </Button>
                       </Box>
                     )}
-                  </Box>
-                }
-                secondary={
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      {checkIn.time.toLocaleString()} - {checkIn.status}
-                    </Typography>
-                    {checkIn.registration_message && (
-                      <Typography 
-                        variant="body2" 
-                        color={checkIn.is_registered ? 'success.main' : 'error.main'}
-                        sx={{ fontStyle: 'italic' }}
-                      >
-                        {checkIn.registration_message}
-                      </Typography>
-                    )}
-                  </Box>
-                }
-              />
-            </ListItem>
-          ))}
-        </List>
-      </Paper>
+                  </ListItemSecondaryAction>
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </Paper>
+      )}
+
       <Snackbar
         open={showNotification}
         autoHideDuration={4000}
