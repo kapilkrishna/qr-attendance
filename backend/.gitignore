@@ -1,5 +1,2 @@
-sendgrid.env
-sendgrid.env
-
 # Ignore environment files
 .env

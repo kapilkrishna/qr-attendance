@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box, TextField, Button, Paper, Typography, Alert, CircularProgress } from '@mui/material';
 import { QRCodeSVG } from 'qrcode.react';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 export default function GenerateQR() {
   const [name, setName] = useState('');

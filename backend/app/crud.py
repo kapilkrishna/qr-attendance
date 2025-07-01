@@ -512,4 +512,18 @@ def create_user_for_attendance(db: Session, name: str, email: str = None):
     db.add(user)
     db.commit()
     db.refresh(user)
-    return user 
+    return user
+
+def delete_attendance_record(db: Session, class_id: int, user_id: int):
+    """Delete attendance record for a specific student in a class"""
+    attendance = db.query(models.Attendance).filter(
+        and_(
+            models.Attendance.class_id == class_id,
+            models.Attendance.user_id == user_id
+        )
+    ).first()
+    if attendance:
+        db.delete(attendance)
+        db.commit()
+        return True
+    return False 

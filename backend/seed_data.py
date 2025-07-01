@@ -14,15 +14,13 @@ def clean_db():
         # Delete all users
         db.query(User).delete()
         db.commit()
-        # Delete all packages except the three specified
+        # Delete all packages except the WCRA Single Session package
         keep_names = [
-            "Elite Program Daily",
-            "Elite Program 1 Week",
-            "Elite Program 9 Weeks"
+            "WCRA Single Session (Members)"
         ]
         db.query(Package).filter(~Package.name.in_(keep_names)).delete(synchronize_session=False)
         db.commit()
-        print("All users deleted. Only specified packages kept.")
+        print("All users deleted. Only WCRA Single Session package kept.")
     finally:
         db.close()
 
@@ -30,30 +28,14 @@ def seed_data():
     db = SessionLocal()
     
     try:
-        # Create only the three specified packages if they don't exist
+        # Create the WCRA Single Session (Members) package if it doesn't exist
         packages = [
             PackageCreate(
-                name="Elite Program Daily",
-                description="Monday to Friday 2:00PM - 4:00PM 4:30PM - 6:30PM",
-                price=80.0,
+                name="WCRA Single Session (Members)",
+                description="Pick any single Wednesday during our Summer session (June 19 - August 14). Beginner/Intermediate goes from 7 - 8 pm. Advanced goes from 8 - 9:30 PM. Member prices are for WCRA members only.",
+                price=25.0,
                 duration_type="class",
                 num_classes=1
-            ),
-            PackageCreate(
-                name="Elite Program 1 Week",
-                description="Monday to Friday 2:00PM - 4:00PM 4:30PM - 6:30PM",
-                price=400.0,
-                duration_type="week",
-                num_classes=5,
-                num_weeks=1
-            ),
-            PackageCreate(
-                name="Elite Program 9 Weeks",
-                description="Monday to Friday 2:00PM - 4:00PM 4:30PM - 6:30PM",
-                price=3600.0,
-                duration_type="week",
-                num_classes=40,
-                num_weeks=9
             )
         ]
         

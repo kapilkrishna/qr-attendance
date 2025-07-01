@@ -132,6 +132,7 @@ class QRGenerateResponse(BaseModel):
 class AttendanceScanRequest(BaseModel):
     qr_data: str
     class_id: int
+    status: str = "present"  # Default to present, can be "present" or "late"
 
 class AttendanceScanResponse(BaseModel):
     success: bool

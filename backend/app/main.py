@@ -6,10 +6,13 @@ import qrcode
 import io
 import base64
 from datetime import date, datetime
+import os
+from dotenv import load_dotenv
 
 from . import crud, models, schemas
 from .database import SessionLocal, engine
-from .email_service import EmailService
+
+load_dotenv()
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -17,9 +20,10 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Tennis Academy MVP API", version="1.0.0")
 
 # CORS middleware
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],  # React dev servers
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -33,11 +37,8 @@ def get_db():
     finally:
         db.close()
 
-# Email service
-email_service = EmailService()
-
 # Coach authentication
-COACH_PASSWORD = "tennis123"  # In production, use environment variable
+COACH_PASSWORD = os.getenv("COACH_PASSWORD", "tennis123")  # Use environment variable in production
 
 @app.post("/api/coach/auth", response_model=schemas.CoachAuthResponse)
 def authenticate_coach(auth: schemas.CoachAuthRequest):
@@ -119,13 +120,6 @@ def register_user(registration: schemas.RegistrationCreate, db: Session = Depend
     # Create registration
     db_registration = crud.create_registration(db=db, registration=registration)
     
-    # Send confirmation email
-    email_service.send_registration_confirmation(
-        user_email=user.email,
-        user_name=user.name,
-        package_name=package.name
-    )
-    
     return db_registration
 
 @app.get("/api/registrations/user/{user_id}", response_model=List[schemas.Registration])
@@ -173,26 +167,27 @@ def cancel_class_endpoint(class_id: int, db: Session = Depends(get_db)):
     
     # Send cancellation email
     if user_emails:
-        email_service.send_class_cancellation(
-            user_emails=user_emails,
-            class_date=db_class.date.strftime("%B %d, %Y"),
-            package_name=package.name
-        )
+        # Send cancellation email
+        pass
     
     return {"message": "Class cancelled successfully"}
 
 # QR Code endpoints
 @app.post("/api/generate_qr", response_model=schemas.QRGenerateResponse)
 def generate_qr_code(request: schemas.QRGenerateRequest, db: Session = Depends(get_db)):
-    """Generate QR code for a user"""
+    print(f"[DEBUG] QR request for name: {request.name}")
     # Find user by name
     user = crud.find_user_by_qr_data(db, request.name)
+    print(f"[DEBUG] User found: {user}")
     if not user:
+        print("[DEBUG] User not found")
         raise HTTPException(status_code=404, detail="User not found")
     
     # Get user's active registrations
     registrations = crud.get_active_registrations(db, user.id)
+    print(f"[DEBUG] Active registrations: {registrations}")
     if not registrations:
+        print("[DEBUG] No active registrations found")
         raise HTTPException(status_code=400, detail="No active registrations found")
     
     # Create QR code data (user ID and name)
@@ -210,6 +205,7 @@ def generate_qr_code(request: schemas.QRGenerateRequest, db: Session = Depends(g
     img.save(buffer, format='PNG')
     qr_base64 = base64.b64encode(buffer.getvalue()).decode()
     
+    print("[DEBUG] QR code generated successfully")
     return schemas.QRGenerateResponse(
         qr_data=qr_data,
         user_info={
@@ -231,14 +227,18 @@ def mark_attendance_from_qr(request: schemas.AttendanceScanRequest, db: Session 
     except (ValueError, IndexError):
         raise HTTPException(status_code=400, detail="Invalid QR code format")
     
+    # Validate status
+    if request.status not in ["present", "late"]:
+        raise HTTPException(status_code=400, detail="Invalid status. Must be 'present' or 'late'")
+    
     # Check if user exists
     user = crud.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Mark attendance with validation
+    # Mark attendance with validation using the provided status
     attendance_record, message, is_registered, registration_message = crud.mark_attendance_with_validation(
-        db, request.class_id, user_id, present=True
+        db, request.class_id, user_id, status=request.status
     )
     
     if not attendance_record:
@@ -348,13 +348,8 @@ def generate_and_send_invoices(month: str, db: Session = Depends(get_db)):
     for invoice in invoices:
         user = crud.get_user(db, invoice.user_id)
         if user:
-            email_service.send_invoice(
-                user_email=user.email,
-                user_name=user.name,
-                invoice_code=invoice.invoice_code,
-                amount_due=invoice.amount_due,
-                month=month
-            )
+            # Send invoice email
+            pass
     
     return {"message": f"Generated {len(invoices)} invoices for {month}"}
 
@@ -400,6 +395,14 @@ def get_or_create_class_by_type(
     db: Session = Depends(get_db)
 ):
     return crud.get_or_create_class_by_date_and_type(db, date, class_type_id)
+
+@app.delete("/api/attendance/{class_id}/{user_id}")
+def delete_attendance(class_id: int, user_id: int, db: Session = Depends(get_db)):
+    """Uncheck attendance for a specific student in a class (delete attendance record)"""
+    deleted = crud.delete_attendance_record(db, class_id, user_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Attendance record not found")
+    return {"success": True, "message": "Attendance record deleted (unchecked)"}
 
 if __name__ == "__main__":
     import uvicorn

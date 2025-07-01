@@ -20,7 +20,7 @@ import {
   FormControl
 } from '@mui/material';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 export default function Packages() {
   const [packages, setPackages] = useState([]);
@@ -165,84 +165,74 @@ export default function Packages() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom align="center">
-        Tennis Academy Packages
-      </Typography>
-      <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 4 }}>
-        Choose the perfect package for your tennis journey
-      </Typography>
-
       <Grid container spacing={4} alignItems="flex-start" sx={{ mt: 2, mb: 4, maxWidth: '900px', mx: 'auto' }}>
-        {packages.map((pkg, idx) => (
-          <Grid item xs={12} sm={8} md={6} key={pkg.id} display="flex" sx={{
-            ml: { md: idx % 2 === 0 ? 0 : 'auto' },
-            mr: { md: idx % 2 === 0 ? 'auto' : 0 },
-            justifyContent: 'flex-start'
-          }}>
-            <Card 
-              sx={{ 
-                height: '100%', 
-                display: 'flex', 
-                flexDirection: 'column',
-                background: 'rgba(30, 44, 80, 0.92)',
-                borderRadius: '22px',
-                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
-                color: '#fff',
-                p: 3,
-                transition: 'transform 0.2s, box-shadow 0.2s',
-                '&:hover': {
-                  transform: 'translateY(-6px) scale(1.03)',
-                  boxShadow: '0 16px 40px 0 rgba(31, 38, 135, 0.35)'
-                }
-              }}
-            >
-              <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 0 }}>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#fff', fontSize: '1.3rem' }}>
-                  {pkg.name}
-                </Typography>
-                <Chip 
-                  label={pkg.duration_type === 'class' ? 'Per Class' : 'Per Week'}
-                  sx={{ mb: 2, alignSelf: 'flex-start', background: '#a259ff', color: '#fff', fontWeight: 600, fontSize: '0.9rem', borderRadius: '8px' }}
-                />
-                <Typography variant="body2" sx={{ mb: 2, flexGrow: 1, color: '#e0e0e0', fontWeight: 500 }}>
-                  {pkg.description}
-                </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 800, color: '#fff', mt: 2, mb: 1 }}>
-                  ${pkg.price}
-                  <Typography component="span" variant="body2" sx={{ color: '#bdbdbd', fontWeight: 400 }}>
-                    /{pkg.duration_type}
+        {packages.map((pkg, idx) => {
+          // Rename packages for display
+          let displayName = pkg.name;
+          if (pkg.name.includes('Beginner')) displayName = 'Adult Beginner';
+          if (pkg.name.includes('Advanced')) displayName = 'Adult Advanced';
+          return (
+            <Grid item xs={12} sm={8} md={6} key={pkg.id} display="flex" justifyContent="center">
+              <Card 
+                sx={{ 
+                  height: { xs: 'auto', md: 400 },
+                  width: { xs: '100%', md: 420 },
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  background: 'rgba(30, 44, 80, 0.92)',
+                  borderRadius: '22px',
+                  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+                  color: '#fff',
+                  p: 3,
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  maxWidth: '500px',
+                  minWidth: { md: 420 },
+                  '&:hover': {
+                    transform: 'translateY(-6px) scale(1.03)',
+                    boxShadow: '0 16px 40px 0 rgba(31, 38, 135, 0.35)'
+                  }
+                }}
+              >
+                <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 0 }}>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#fff', fontSize: '1.3rem' }}>
+                    {displayName}
                   </Typography>
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#bdbdbd', mb: 2 }}>
-                  {pkg.classes_included} classes included<br/>
-                  {pkg.weeks_included} weeks included
-                </Typography>
-                <Button 
-                  variant="contained" 
-                  fullWidth
-                  sx={{
-                    mt: 'auto',
-                    background: 'linear-gradient(90deg, #a259ff 0%, #3a8dde 100%)',
-                    color: '#fff',
-                    fontWeight: 700,
-                    fontSize: '1.1rem',
-                    borderRadius: '12px',
-                    py: 1.2,
-                    boxShadow: '0 4px 16px 0 rgba(162,89,255,0.18)',
-                    textTransform: 'none',
-                    '&:hover': {
-                      background: 'linear-gradient(90deg, #3a8dde 0%, #a259ff 100%)',
-                      boxShadow: '0 8px 24px 0 rgba(162,89,255,0.28)'
-                    }
-                  }}
-                  onClick={() => handleOpenPurchase(pkg)}
-                >
-                  Buy Now
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
+                  <Typography variant="body2" sx={{ mb: 2, flexGrow: 1, color: '#e0e0e0', fontWeight: 500, lineHeight: 1.6 }}>
+                    {pkg.description}
+                  </Typography>
+                  <Typography variant="h5" sx={{ fontWeight: 800, color: '#fff', mt: 2, mb: 1 }}>
+                    ${pkg.price} <Typography component="span" variant="body2" sx={{ color: '#bdbdbd', fontWeight: 400 }}>/session</Typography>
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: '#bdbdbd', mb: 2 }}>
+                    1 session included
+                  </Typography>
+                  <Button 
+                    variant="contained" 
+                    fullWidth
+                    sx={{
+                      mt: 'auto',
+                      background: 'linear-gradient(90deg, #a259ff 0%, #3a8dde 100%)',
+                      color: '#fff',
+                      fontWeight: 700,
+                      fontSize: '1.1rem',
+                      borderRadius: '12px',
+                      py: 1.2,
+                      boxShadow: '0 4px 16px 0 rgba(162,89,255,0.18)',
+                      textTransform: 'none',
+                      '&:hover': {
+                        background: 'linear-gradient(90deg, #3a8dde 0%, #a259ff 100%)',
+                        boxShadow: '0 8px 24px 0 rgba(162,89,255,0.28)'
+                      }
+                    }}
+                    onClick={() => handleOpenPurchase(pkg)}
+                  >
+                    Buy Now
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+          );
+        })}
       </Grid>
 
       <Dialog open={purchaseOpen} onClose={handleClosePurchase} PaperProps={{
@@ -303,12 +293,32 @@ export default function Packages() {
                 color: '#fff',
               }
             }}>
-              <InputLabel>Select {selectedPackage?.duration_type === 'class' ? 'Date' : 'Week'}</InputLabel>
+              <InputLabel>Select Date</InputLabel>
               <Select
                 value={selectedOptionId}
-                label={`Select ${selectedPackage?.duration_type === 'class' ? 'Date' : 'Week'}`}
+                label={`Select Date`}
                 onChange={e => setSelectedOptionId(e.target.value)}
                 sx={{ color: '#fff' }}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      bgcolor: 'rgba(44, 62, 100, 0.98)',
+                      color: '#fff',
+                    },
+                  },
+                  MenuListProps: {
+                    sx: {
+                      '& .Mui-selected': {
+                        bgcolor: '#3a3a5a !important',
+                        color: '#fff',
+                      },
+                      '& .MuiMenuItem-root:hover': {
+                        bgcolor: '#3a3a5a',
+                        color: '#fff',
+                      },
+                    },
+                  },
+                }}
               >
                 {options.map(opt => (
                   <MenuItem key={opt.id} value={opt.id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>{opt.label}</MenuItem>
