@@ -562,10 +562,21 @@ export default function CoachAttendance() {
   }, [allStudents]);
 
   return (
-    <Box sx={{ maxWidth: 800, mx: 'auto', mt: 4 }}>
+    <Box sx={{
+      width: { xs: '100vw', sm: '100%', md: 800 },
+      maxWidth: { xs: '100vw', sm: '100%', md: 800 },
+      mx: 'auto',
+      mt: 4,
+      px: { xs: 0, sm: 2 },
+      overflowX: { xs: 'hidden', sm: 'visible' }
+    }}>
       <Typography variant="h4" gutterBottom>Take Attendance</Typography>
-      <Paper elevation={3} sx={{ 
-        p: 3, mb: 3, 
+      <Paper elevation={3} sx={{
+        width: '100%',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
+        p: { xs: 2, sm: 3 },
+        mb: 3,
         background: 'rgba(30, 44, 80, 0.92)',
         borderRadius: '22px',
         boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
@@ -673,8 +684,12 @@ export default function CoachAttendance() {
 
       {/* QR Scanning Section */}
       {isScanning && (
-        <Paper elevation={3} sx={{ 
-          p: 3, mb: 3, 
+        <Paper elevation={3} sx={{
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          p: { xs: 2, sm: 3 },
+          mb: 3,
           background: 'rgba(30, 44, 80, 0.92)',
           borderRadius: '22px',
           boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
@@ -764,13 +779,17 @@ export default function CoachAttendance() {
 
       {/* Student List Section */}
       {date && selectedType && (
-      <Paper elevation={3} sx={{ 
-          p: 3, mb: 3, 
-        background: 'rgba(30, 44, 80, 0.92)',
-        borderRadius: '22px',
-        boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
-        color: '#fff',
-      }}>
+      <Paper elevation={3} sx={{
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          p: { xs: 2, sm: 3 },
+          mb: 3,
+          background: 'rgba(30, 44, 80, 0.92)',
+          borderRadius: '22px',
+          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+          color: '#fff',
+        }}>
           <Typography variant="h6" gutterBottom sx={{ color: '#fff', fontWeight: 700 }}>
             Students - {classTypes.find(t => t.id === selectedType)?.name} on {date}
           </Typography>
