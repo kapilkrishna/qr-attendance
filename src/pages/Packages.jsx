@@ -176,9 +176,11 @@ export default function Packages() {
             <Grid item xs={12} sm={8} md={6} key={pkg.id} display="flex" justifyContent="center">
               <Card 
                 sx={{ 
-                  height: { xs: 'auto', md: 400 },
+                  width: { xs: '90vw', sm: 380, md: 420 },
+                  minWidth: { xs: '90vw', sm: 380, md: 420 },
+                  maxWidth: { xs: '90vw', sm: 500, md: 500 },
                   minHeight: { xs: 320, md: 400 },
-                  width: { xs: '100%', md: 420 },
+                  height: { xs: 'auto', md: 400 },
                   display: 'flex', 
                   flexDirection: 'column',
                   background: 'rgba(30, 44, 80, 0.92)',
@@ -187,8 +189,6 @@ export default function Packages() {
                   color: '#fff',
                   p: 3,
                   transition: 'transform 0.2s, box-shadow 0.2s',
-                  maxWidth: '500px',
-                  minWidth: { md: 420 },
                   '&:hover': {
                     transform: 'translateY(-6px) scale(1.03)',
                     boxShadow: '0 16px 40px 0 rgba(31, 38, 135, 0.35)'
