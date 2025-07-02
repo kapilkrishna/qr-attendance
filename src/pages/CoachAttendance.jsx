@@ -563,8 +563,8 @@ export default function CoachAttendance() {
 
   return (
     <Box sx={{
-      width: { xs: '100vw', sm: '100%', md: 800 },
-      maxWidth: { xs: '100vw', sm: '100%', md: 800 },
+      width: '100%',
+      maxWidth: '100%',
       mx: 'auto',
       mt: 4,
       px: { xs: 0, sm: 2 },
@@ -872,7 +872,7 @@ export default function CoachAttendance() {
                   </Box>
                   {/* For unmarked students, always show the three buttons */}
                   {student.status === 'unchecked' ? (
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', ml: 3 }}>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, alignItems: 'stretch', ml: { xs: 0, sm: 3 } }}>
                       <Button
                         type="button"
                         variant='outlined'
@@ -882,9 +882,9 @@ export default function CoachAttendance() {
                           color: '#4caf50',
                           fontWeight: 'bold',
                           borderRadius: '8px',
-                          px: 3,
-                          minWidth: 90,
-                          maxWidth: 120,
+                          minWidth: { xs: 0, sm: 90 },
+                          px: { xs: 1, sm: 3 },
+                          width: { xs: '100%', sm: 'auto' },
                           height: 40,
                           display: 'flex',
                           alignItems: 'center',
@@ -903,9 +903,9 @@ export default function CoachAttendance() {
                           color: '#ff9800',
                           fontWeight: 'bold',
                           borderRadius: '8px',
-                          px: 3,
-                          minWidth: 90,
-                          maxWidth: 120,
+                          minWidth: { xs: 0, sm: 90 },
+                          px: { xs: 1, sm: 3 },
+                          width: { xs: '100%', sm: 'auto' },
                           height: 40,
                           display: 'flex',
                           alignItems: 'center',
@@ -924,9 +924,9 @@ export default function CoachAttendance() {
                           color: '#f44336',
                           fontWeight: 'bold',
                           borderRadius: '8px',
-                          px: 3,
-                          minWidth: 90,
-                          maxWidth: 120,
+                          minWidth: { xs: 0, sm: 90 },
+                          px: { xs: 1, sm: 3 },
+                          width: { xs: '100%', sm: 'auto' },
                           height: 40,
                           display: 'flex',
                           alignItems: 'center',
@@ -938,7 +938,7 @@ export default function CoachAttendance() {
                       </Button>
                     </Box>
                   ) : menuOpenId === student.id && (
-                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', ml: 3 }} onClick={e => e.stopPropagation()}>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, alignItems: 'stretch', ml: { xs: 0, sm: 3 } }} onClick={e => e.stopPropagation()}>
                       {student.status !== 'present' && (
                         <Button
                           type="button"
@@ -949,9 +949,9 @@ export default function CoachAttendance() {
                             color: '#4caf50',
                             fontWeight: 'bold',
                             borderRadius: '8px',
-                            px: 3,
-                            minWidth: 90,
-                            maxWidth: 120,
+                            minWidth: { xs: 0, sm: 90 },
+                            px: { xs: 1, sm: 3 },
+                            width: { xs: '100%', sm: 'auto' },
                             height: 40,
                             display: 'flex',
                             alignItems: 'center',
@@ -972,9 +972,9 @@ export default function CoachAttendance() {
                             color: '#ff9800',
                             fontWeight: 'bold',
                             borderRadius: '8px',
-                            px: 3,
-                            minWidth: 90,
-                            maxWidth: 120,
+                            minWidth: { xs: 0, sm: 90 },
+                            px: { xs: 1, sm: 3 },
+                            width: { xs: '100%', sm: 'auto' },
                             height: 40,
                             display: 'flex',
                             alignItems: 'center',
@@ -995,9 +995,9 @@ export default function CoachAttendance() {
                             color: '#f44336',
                             fontWeight: 'bold',
                             borderRadius: '8px',
-                            px: 3,
-                            minWidth: 90,
-                            maxWidth: 120,
+                            minWidth: { xs: 0, sm: 90 },
+                            px: { xs: 1, sm: 3 },
+                            width: { xs: '100%', sm: 'auto' },
                             height: 40,
                             display: 'flex',
                             alignItems: 'center',
@@ -1018,9 +1018,9 @@ export default function CoachAttendance() {
                             color: '#a259ff',
                             fontWeight: 'bold',
                             borderRadius: '8px',
-                            px: 3,
-                            minWidth: 90,
-                            maxWidth: 120,
+                            minWidth: { xs: 0, sm: 90 },
+                            px: { xs: 1, sm: 3 },
+                            width: { xs: '100%', sm: 'auto' },
                             height: 40,
                             display: 'flex',
                             alignItems: 'center',
