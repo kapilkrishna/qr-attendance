@@ -31,4 +31,8 @@ def get_db():
 
 if __name__ == "__main__":
     from . import models
-    Base.metadata.create_all(bind=engine) 
+    Base.metadata.create_all(bind=engine)
+
+# --- TEMPORARY: Run create_all on startup for production migration ---
+from . import models
+Base.metadata.create_all(bind=engine) 
