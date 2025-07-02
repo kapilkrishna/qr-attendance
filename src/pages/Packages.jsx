@@ -177,6 +177,7 @@ export default function Packages() {
               <Card 
                 sx={{ 
                   height: { xs: 'auto', md: 400 },
+                  minHeight: { xs: 320, md: 400 },
                   width: { xs: '100%', md: 420 },
                   display: 'flex', 
                   flexDirection: 'column',
