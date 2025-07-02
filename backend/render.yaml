@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: qr-attendance-backend
+    runtime: python
+    plan: free
+    buildCommand: pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: qr-attendance-db
+          property: connectionString
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: FROM_EMAIL
+        value: noreply@yourdomain.com
+      - key: COACH_PASSWORD
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://qr-attendance-frontend.onrender.com
+
+databases:
+  - name: qr-attendance-db
+    plan: free
+    databaseName: qrattendance
+    user: qrattendance_user 
