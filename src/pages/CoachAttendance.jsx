@@ -580,12 +580,16 @@ export default function CoachAttendance() {
           },
           '& .MuiInputLabel-root': { color: '#bdbdbd' },
           '& .MuiSelect-icon': { color: '#fff' },
+          m: { xs: 0, sm: 'normal' },
+          p: { xs: 0.5, sm: 0 },
         }}>
           <TextField
             label="Date"
             type="date"
             value={date}
             onChange={e => setDate(e.target.value)}
+            fullWidth
+            sx={{ width: '100%' }}
             InputLabelProps={{ shrink: true, sx: { color: '#bdbdbd' } }}
             InputProps={{
               sx: {
