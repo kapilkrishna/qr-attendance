@@ -205,15 +205,21 @@ def generate_qr_code(request: schemas.QRGenerateRequest, db: Session = Depends(g
         
         # Validate registrations and packages
         valid_registrations = []
+        invalid_registrations = []
         for reg in registrations:
             if reg and reg.package and hasattr(reg.package, 'name'):
                 valid_registrations.append(reg)
             else:
                 print(f"[DEBUG] Invalid registration or package: {reg}")
+                invalid_registrations.append(reg)
         
         if not valid_registrations:
             print("[DEBUG] No valid registrations found")
-            raise HTTPException(status_code=400, detail="No valid registrations found")
+            if invalid_registrations:
+                error_msg = f"No valid registrations found for {user.name}. Found {len(invalid_registrations)} registrations with invalid package references. Please contact support or try registering again."
+            else:
+                error_msg = f"No active registrations found for {user.name}. Please register for a class first."
+            raise HTTPException(status_code=400, detail=error_msg)
         
         # Create QR code data (user ID and name)
         qr_data = f"{user.id}:{user.name}"
@@ -497,6 +503,38 @@ def seed_database_endpoint(db: Session = Depends(get_db)):
         return {"message": "Database seeded successfully"}
     except Exception as e:
         print(f"[ERROR] Seeding error: {str(e)}")
+        return {"error": str(e)}
+
+# Database cleanup endpoint
+@app.post("/api/cleanup")
+def cleanup_database(db: Session = Depends(get_db)):
+    """Clean up database inconsistencies"""
+    try:
+        print("[DEBUG] Starting database cleanup...")
+        
+        # Find registrations with invalid package references
+        invalid_registrations = db.query(models.Registration).outerjoin(models.Package).filter(
+            models.Package.id.is_(None)
+        ).all()
+        
+        print(f"[DEBUG] Found {len(invalid_registrations)} registrations with invalid packages")
+        
+        # Delete invalid registrations
+        for reg in invalid_registrations:
+            print(f"[DEBUG] Deleting invalid registration {reg.id}")
+            db.delete(reg)
+        
+        db.commit()
+        
+        return {
+            "message": f"Database cleanup completed. Removed {len(invalid_registrations)} invalid registrations.",
+            "removed_count": len(invalid_registrations)
+        }
+        
+    except Exception as e:
+        print(f"[ERROR] Cleanup error: {str(e)}")
+        import traceback
+        print(f"[ERROR] Full traceback: {traceback.format_exc()}")
         return {"error": str(e)}
 
 if __name__ == "__main__":
