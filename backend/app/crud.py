@@ -46,18 +46,41 @@ def get_user_registrations(db: Session, user_id: int):
 def get_active_registrations(db: Session, user_id: int):
     print(f"[DEBUG] Checking active registrations for user {user_id}")
     
-    registrations = db.query(models.Registration).filter(
-        and_(
-            models.Registration.user_id == user_id,
-            models.Registration.status == "active"
-        )
-    ).all()
-    
-    print(f"[DEBUG] Found {len(registrations)} active registrations")
-    for reg in registrations:
-        print(f"[DEBUG] Registration {reg.id}: start_date={reg.start_date}, end_date={reg.end_date}, package={reg.package.name}")
-    
-    return registrations
+    try:
+        registrations = db.query(models.Registration).filter(
+            and_(
+                models.Registration.user_id == user_id,
+                models.Registration.status == "active"
+            )
+        ).all()
+        
+        print(f"[DEBUG] Found {len(registrations)} active registrations")
+        
+        # Filter out any None values and validate packages
+        valid_registrations = []
+        for reg in registrations:
+            if reg is None:
+                print("[DEBUG] Found None registration, skipping")
+                continue
+                
+            # Check if package exists and has required attributes
+            if not hasattr(reg, 'package') or reg.package is None:
+                print(f"[DEBUG] Registration {reg.id} has no package, skipping")
+                continue
+                
+            if not hasattr(reg.package, 'name'):
+                print(f"[DEBUG] Registration {reg.id} package has no name, skipping")
+                continue
+                
+            print(f"[DEBUG] Registration {reg.id}: start_date={reg.start_date}, end_date={reg.end_date}, package={reg.package.name}")
+            valid_registrations.append(reg)
+        
+        print(f"[DEBUG] Returning {len(valid_registrations)} valid registrations")
+        return valid_registrations
+        
+    except Exception as e:
+        print(f"[ERROR] Error in get_active_registrations: {str(e)}")
+        return []
 
 def create_registration(db: Session, registration: schemas.RegistrationCreate):
     db_registration = models.Registration(**registration.dict())

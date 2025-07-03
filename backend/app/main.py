@@ -193,6 +193,18 @@ def generate_qr_code(request: schemas.QRGenerateRequest, db: Session = Depends(g
             print("[DEBUG] No active registrations found")
             raise HTTPException(status_code=400, detail="No active registrations found")
         
+        # Validate registrations and packages
+        valid_registrations = []
+        for reg in registrations:
+            if reg and reg.package and hasattr(reg.package, 'name'):
+                valid_registrations.append(reg)
+            else:
+                print(f"[DEBUG] Invalid registration or package: {reg}")
+        
+        if not valid_registrations:
+            print("[DEBUG] No valid registrations found")
+            raise HTTPException(status_code=400, detail="No valid registrations found")
+        
         # Create QR code data (user ID and name)
         qr_data = f"{user.id}:{user.name}"
         
@@ -215,7 +227,7 @@ def generate_qr_code(request: schemas.QRGenerateRequest, db: Session = Depends(g
                 "id": user.id,
                 "name": user.name,
                 "email": user.email,
-                "registrations": [{"package_name": reg.package.name} for reg in registrations]
+                "registrations": [{"package_name": reg.package.name} for reg in valid_registrations]
             }
         )
     except Exception as e:
