@@ -422,6 +422,57 @@ def delete_attendance(class_id: int, user_id: int, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Attendance record not found")
     return {"success": True, "message": "Attendance record deleted (unchecked)"}
 
+# Debug endpoint to check user registrations
+@app.get("/api/debug/user/{name}")
+def debug_user_registrations(name: str, db: Session = Depends(get_db)):
+    """Debug endpoint to check user and their registrations"""
+    try:
+        print(f"[DEBUG] Checking user: {name}")
+        
+        # Find user by name
+        user = crud.find_user_by_qr_data(db, name)
+        if not user:
+            return {"error": "User not found", "name": name}
+        
+        print(f"[DEBUG] User found: {user.id} - {user.name}")
+        
+        # Get all registrations (not just active)
+        all_registrations = crud.get_user_registrations(db, user.id)
+        print(f"[DEBUG] All registrations: {len(all_registrations)}")
+        
+        # Get active registrations
+        active_registrations = crud.get_active_registrations(db, user.id)
+        print(f"[DEBUG] Active registrations: {len(active_registrations)}")
+        
+        # Format registration data
+        reg_data = []
+        for reg in all_registrations:
+            reg_info = {
+                "id": reg.id,
+                "status": reg.status,
+                "start_date": str(reg.start_date),
+                "end_date": str(reg.end_date),
+                "package_id": reg.package_id,
+                "package_name": reg.package.name if reg.package else "NO PACKAGE",
+                "package_class_type": reg.package.class_type.name if reg.package and reg.package.class_type else "NO CLASS TYPE"
+            }
+            reg_data.append(reg_info)
+        
+        return {
+            "user": {
+                "id": user.id,
+                "name": user.name,
+                "email": user.email
+            },
+            "all_registrations": reg_data,
+            "active_registrations_count": len(active_registrations),
+            "today": str(date.today())
+        }
+        
+    except Exception as e:
+        print(f"[ERROR] Debug error: {str(e)}")
+        return {"error": str(e)}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000) 
