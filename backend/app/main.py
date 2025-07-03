@@ -537,6 +537,117 @@ def cleanup_database(db: Session = Depends(get_db)):
         print(f"[ERROR] Full traceback: {traceback.format_exc()}")
         return {"error": str(e)}
 
+# Database reset endpoint
+@app.post("/api/reset_database")
+def reset_database(db: Session = Depends(get_db)):
+    """Reset entire database - removes all users, registrations, attendance, etc."""
+    try:
+        print("[DEBUG] Starting complete database reset...")
+        
+        # Delete all attendance records
+        attendance_count = db.query(models.Attendance).count()
+        db.query(models.Attendance).delete()
+        print(f"[DEBUG] Deleted {attendance_count} attendance records")
+        
+        # Delete all registrations
+        registration_count = db.query(models.Registration).count()
+        db.query(models.Registration).delete()
+        print(f"[DEBUG] Deleted {registration_count} registrations")
+        
+        # Delete all users
+        user_count = db.query(models.User).count()
+        db.query(models.User).delete()
+        print(f"[DEBUG] Deleted {user_count} users")
+        
+        # Delete all payments
+        payment_count = db.query(models.Payment).count()
+        db.query(models.Payment).delete()
+        print(f"[DEBUG] Deleted {payment_count} payments")
+        
+        # Keep packages, classes, and class types (these are the core data)
+        print("[DEBUG] Keeping packages, classes, and class types")
+        
+        db.commit()
+        
+        total_deleted = attendance_count + registration_count + user_count + payment_count
+        return {
+            "message": f"Database reset completed. Removed {total_deleted} records.",
+            "details": {
+                "attendance_records": attendance_count,
+                "registrations": registration_count,
+                "users": user_count,
+                "payments": payment_count
+            }
+        }
+    except Exception as e:
+        db.rollback()
+        print(f"[DEBUG] Reset failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database reset failed: {str(e)}")
+
+# User merge endpoint
+@app.post("/api/merge_users")
+def merge_users(request: dict, db: Session = Depends(get_db)):
+    """Merge users with different emails but same name"""
+    try:
+        name = request.get("name")
+        primary_email = request.get("primary_email")
+        secondary_email = request.get("secondary_email")
+        
+        if not all([name, primary_email, secondary_email]):
+            raise HTTPException(status_code=400, detail="Missing required fields: name, primary_email, secondary_email")
+        
+        # Find both users
+        primary_user = crud.get_user_by_email(db, primary_email)
+        secondary_user = crud.get_user_by_email(db, secondary_email)
+        
+        if not primary_user or not secondary_user:
+            raise HTTPException(status_code=404, detail="One or both users not found")
+        
+        if primary_user.name != secondary_user.name:
+            raise HTTPException(status_code=400, detail="Users must have the same name to merge")
+        
+        print(f"[DEBUG] Merging users: {primary_user.name} ({primary_email}) and {secondary_user.name} ({secondary_email})")
+        
+        # Move all registrations from secondary to primary user
+        secondary_registrations = crud.get_user_registrations(db, secondary_user.id)
+        for reg in secondary_registrations:
+            reg.user_id = primary_user.id
+            print(f"[DEBUG] Moved registration {reg.id} to user {primary_user.id}")
+        
+        # Move all attendance records from secondary to primary user
+        secondary_attendance = db.query(models.Attendance).filter(
+            models.Attendance.user_id == secondary_user.id
+        ).all()
+        for att in secondary_attendance:
+            att.user_id = primary_user.id
+            print(f"[DEBUG] Moved attendance {att.id} to user {primary_user.id}")
+        
+        # Move all payments from secondary to primary user
+        secondary_payments = db.query(models.Payment).filter(
+            models.Payment.user_id == secondary_user.id
+        ).all()
+        for payment in secondary_payments:
+            payment.user_id = primary_user.id
+            print(f"[DEBUG] Moved payment {payment.id} to user {primary_user.id}")
+        
+        # Delete the secondary user
+        db.delete(secondary_user)
+        print(f"[DEBUG] Deleted secondary user {secondary_user.id}")
+        
+        db.commit()
+        
+        return {
+            "message": f"Successfully merged users. Primary user: {primary_user.name} ({primary_email})",
+            "primary_user_id": primary_user.id,
+            "moved_registrations": len(secondary_registrations),
+            "moved_attendance": len(secondary_attendance),
+            "moved_payments": len(secondary_payments)
+        }
+    except Exception as e:
+        db.rollback()
+        print(f"[DEBUG] Merge failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"User merge failed: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000) 
