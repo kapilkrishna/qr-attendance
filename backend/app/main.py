@@ -230,8 +230,13 @@ def generate_qr_code(request: schemas.QRGenerateRequest, db: Session = Depends(g
                 "registrations": [{"package_name": reg.package.name} for reg in valid_registrations]
             }
         )
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
-        print(f"[ERROR] QR generation failed: {str(e)}")
+        import traceback
+        print(f"[ERROR] QR generation failed with exception: {str(e)}")
+        print(f"[ERROR] Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"QR generation failed: {str(e)}")
 
 # Attendance endpoints

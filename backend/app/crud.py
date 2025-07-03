@@ -312,7 +312,16 @@ def generate_monthly_invoices(db: Session, month: str):
 
 def find_user_by_qr_data(db: Session, qr_data: str):
     """Find user by QR code data (name)"""
-    return db.query(models.User).filter(models.User.name == qr_data).first()
+    try:
+        print(f"[DEBUG] Searching for user with name: '{qr_data}'")
+        user = db.query(models.User).filter(models.User.name == qr_data).first()
+        print(f"[DEBUG] User search result: {user}")
+        return user
+    except Exception as e:
+        print(f"[ERROR] Error in find_user_by_qr_data: {str(e)}")
+        import traceback
+        print(f"[ERROR] Full traceback: {traceback.format_exc()}")
+        return None
 
 def get_package_options(db: Session, package_id: int):
     return db.query(models.PackageOption).filter(models.PackageOption.package_id == package_id).all()
