@@ -146,13 +146,17 @@ def check_user_registration_for_class_type_and_date(db: Session, user_id: int, c
     if not active_registrations:
         return False, "No active registrations found"
     
-    # Check if any registration is for the correct class type
+    # Check if any registration covers this date AND class type
     for registration in active_registrations:
-        # Check if package is for the correct class type
-        if registration.package.class_type_id == class_type_id:
-            return True, f"Registered for {registration.package.class_type.name}"
+        # Check date range
+        if registration.start_date <= class_date <= registration.end_date:
+            # Check if package is for the correct class type
+            if registration.package.class_type_id == class_type_id:
+                return True, f"Registered for {registration.package.class_type.name} on this date"
+            else:
+                return False, f"Registered for {registration.package.class_type.name} but attending {get_class_type_name(db, class_type_id)}"
     
-    return False, "Not registered for this class type"
+    return False, "Not registered for this date"
 
 def mark_attendance_with_validation(db: Session, class_id: int, user_id: int, status: str = "present"):
     """Mark attendance with validation and return detailed status"""
@@ -344,10 +348,12 @@ def get_unchecked_students_for_class(db: Session, class_id: int):
     if not class_record:
         return []
     
-    # Get all users with active registrations for this class type
+    # Get all users with active registrations for this class type and date
     active_registrations = db.query(models.Registration).filter(
         and_(
             models.Registration.status == "active",
+            models.Registration.start_date <= class_record.date,
+            models.Registration.end_date >= class_record.date,
             models.Registration.package.has(class_type_id=class_record.class_type_id)
         )
     ).all()
@@ -412,19 +418,32 @@ def get_comprehensive_attendance_for_class(db: Session, class_id: int):
         models.Attendance.class_id == class_id
     ).all()
     
-    # Get all users with active registrations for this class type
+    # Get all users with active registrations for this class type and date
     active_registrations = db.query(models.Registration).filter(
         and_(
             models.Registration.status == "active",
-            models.Registration.package.has(class_type_id=class_record.class_type_id)
+            models.Registration.start_date <= class_record.date,
+            models.Registration.end_date >= class_record.date
         )
     ).all()
+    
+    # Get package IDs for this class type
+    package_ids = [reg.package_id for reg in active_registrations]
+    packages_with_class_type = db.query(models.Package).filter(
+        and_(
+            models.Package.id.in_(package_ids),
+            models.Package.class_type_id == class_record.class_type_id
+        )
+    ).all()
+    valid_package_ids = [p.id for p in packages_with_class_type]
     
     # Get registered users for this class
     registered_users = db.query(models.User).join(models.Registration).filter(
         and_(
-            models.Registration.package.has(class_type_id=class_record.class_type_id),
-            models.Registration.status == "active"
+            models.Registration.package_id.in_(valid_package_ids),
+            models.Registration.status == "active",
+            models.Registration.start_date <= class_record.date,
+            models.Registration.end_date >= class_record.date
         )
     ).all()
     
