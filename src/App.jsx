@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { Container, AppBar, Toolbar, Typography, Button, Box, Tabs, Tab } from '@mui/material';
 import { useState } from 'react';
 
@@ -96,6 +96,7 @@ function App() {
           <Route path="/coach" element={<CoachLogin />} />
           <Route path="/coach/attendance" element={<CoachAttendance />} />
           <Route path="/coach/cancel" element={<CoachCancelClass />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Container>
     </Box>
