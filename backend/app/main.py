@@ -9,7 +9,7 @@ from datetime import date, datetime
 import os
 from dotenv import load_dotenv
 
-from . import crud, models, schemas
+from . import crud, models, schemas, seed_data
 from .database import SessionLocal, engine
 
 load_dotenv()
@@ -471,6 +471,17 @@ def debug_user_registrations(name: str, db: Session = Depends(get_db)):
         
     except Exception as e:
         print(f"[ERROR] Debug error: {str(e)}")
+        return {"error": str(e)}
+
+# Seed database endpoint
+@app.post("/api/seed")
+def seed_database_endpoint(db: Session = Depends(get_db)):
+    """Seed the database with test data"""
+    try:
+        seed_data.seed_database(db)
+        return {"message": "Database seeded successfully"}
+    except Exception as e:
+        print(f"[ERROR] Seeding error: {str(e)}")
         return {"error": str(e)}
 
 if __name__ == "__main__":
