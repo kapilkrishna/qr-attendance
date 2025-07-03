@@ -177,12 +177,22 @@ def cancel_class_endpoint(class_id: int, db: Session = Depends(get_db)):
 def generate_qr_code(request: schemas.QRGenerateRequest, db: Session = Depends(get_db)):
     try:
         print(f"[DEBUG] QR request for name: {request.name}")
-        # Find user by name
+        
+        # Find user by name - try exact match first
         user = crud.find_user_by_qr_data(db, request.name)
+        
+        # If not found, try case-insensitive search
+        if not user:
+            print(f"[DEBUG] Exact match not found, trying case-insensitive search")
+            from sqlalchemy import func
+            user = db.query(models.User).filter(
+                func.lower(models.User.name) == func.lower(request.name)
+            ).first()
+        
         print(f"[DEBUG] User found: {user}")
         if not user:
-            print("[DEBUG] User not found")
-            raise HTTPException(status_code=404, detail="User not found")
+            print("[DEBUG] User not found with any method")
+            raise HTTPException(status_code=404, detail=f"User '{request.name}' not found. Please check the spelling or register for a class first.")
         
         print(f"[DEBUG] User ID: {user.id}, Name: {user.name}")
         
@@ -191,7 +201,7 @@ def generate_qr_code(request: schemas.QRGenerateRequest, db: Session = Depends(g
         print(f"[DEBUG] Active registrations count: {len(registrations) if registrations else 0}")
         if not registrations:
             print("[DEBUG] No active registrations found")
-            raise HTTPException(status_code=400, detail="No active registrations found")
+            raise HTTPException(status_code=400, detail=f"No active registrations found for {user.name}. Please register for a class first.")
         
         # Validate registrations and packages
         valid_registrations = []
