@@ -45,7 +45,9 @@ def get_user_registrations(db: Session, user_id: int):
 
 def get_active_registrations(db: Session, user_id: int):
     today = date.today()
-    return db.query(models.Registration).filter(
+    print(f"[DEBUG] Checking active registrations for user {user_id} on date: {today}")
+    
+    registrations = db.query(models.Registration).filter(
         and_(
             models.Registration.user_id == user_id,
             models.Registration.status == "active",
@@ -53,6 +55,12 @@ def get_active_registrations(db: Session, user_id: int):
             models.Registration.end_date >= today
         )
     ).all()
+    
+    print(f"[DEBUG] Found {len(registrations)} registrations")
+    for reg in registrations:
+        print(f"[DEBUG] Registration {reg.id}: start_date={reg.start_date}, end_date={reg.end_date}, package={reg.package.name}")
+    
+    return registrations
 
 def create_registration(db: Session, registration: schemas.RegistrationCreate):
     db_registration = models.Registration(**registration.dict())

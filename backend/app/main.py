@@ -20,7 +20,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Tennis Academy MVP API", version="1.0.0")
 
 # CORS middleware
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://192.168.1.171:5173").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
@@ -183,9 +183,11 @@ def generate_qr_code(request: schemas.QRGenerateRequest, db: Session = Depends(g
         print("[DEBUG] User not found")
         raise HTTPException(status_code=404, detail="User not found")
     
+    print(f"[DEBUG] User ID: {user.id}, Name: {user.name}")
+    
     # Get user's active registrations
     registrations = crud.get_active_registrations(db, user.id)
-    print(f"[DEBUG] Active registrations: {registrations}")
+    print(f"[DEBUG] Active registrations count: {len(registrations) if registrations else 0}")
     if not registrations:
         print("[DEBUG] No active registrations found")
         raise HTTPException(status_code=400, detail="No active registrations found")
