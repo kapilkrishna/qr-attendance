@@ -47,14 +47,24 @@ def get_active_registrations(db: Session, user_id: int):
     print(f"[DEBUG] Checking active registrations for user {user_id}")
     
     try:
+        # Get today's date
+        today = date.today()
+        print(f"[DEBUG] Server date: {today}")
+        
+        # Use a more flexible date range (allow registrations within 30 days of today)
+        start_range = today - timedelta(days=30)
+        end_range = today + timedelta(days=30)
+        
         registrations = db.query(models.Registration).filter(
             and_(
                 models.Registration.user_id == user_id,
-                models.Registration.status == "active"
+                models.Registration.status == "active",
+                models.Registration.start_date <= end_range,
+                models.Registration.end_date >= start_range
             )
         ).all()
         
-        print(f"[DEBUG] Found {len(registrations)} active registrations")
+        print(f"[DEBUG] Found {len(registrations)} registrations in flexible date range")
         
         # Filter out any None values and validate packages
         valid_registrations = []
