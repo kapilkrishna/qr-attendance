@@ -20,6 +20,9 @@ export default function GenerateQR() {
     setUserInfo(null);
 
     try {
+      console.log('Making API call to:', `${API_BASE_URL}/generate_qr`);
+      console.log('Request body:', { name: name.trim() });
+      
       const response = await fetch(`${API_BASE_URL}/generate_qr`, {
         method: 'POST',
         headers: {
@@ -28,17 +31,22 @@ export default function GenerateQR() {
         body: JSON.stringify({ name: name.trim() })
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.log('Error data:', errorData);
         throw new Error(errorData.detail || 'Failed to generate QR code');
       }
 
       const data = await response.json();
+      console.log('Success data:', data);
       setUserInfo(data.user_info);
       setShowQR(true);
     } catch (err) {
-      setError(err.message || 'Failed to generate QR code. Please check the name and try again.');
       console.error('Error generating QR:', err);
+      setError(err.message || 'Failed to generate QR code. Please check the name and try again.');
     } finally {
       setLoading(false);
     }

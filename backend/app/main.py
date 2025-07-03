@@ -175,48 +175,52 @@ def cancel_class_endpoint(class_id: int, db: Session = Depends(get_db)):
 # QR Code endpoints
 @app.post("/api/generate_qr", response_model=schemas.QRGenerateResponse)
 def generate_qr_code(request: schemas.QRGenerateRequest, db: Session = Depends(get_db)):
-    print(f"[DEBUG] QR request for name: {request.name}")
-    # Find user by name
-    user = crud.find_user_by_qr_data(db, request.name)
-    print(f"[DEBUG] User found: {user}")
-    if not user:
-        print("[DEBUG] User not found")
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    print(f"[DEBUG] User ID: {user.id}, Name: {user.name}")
-    
-    # Get user's active registrations
-    registrations = crud.get_active_registrations(db, user.id)
-    print(f"[DEBUG] Active registrations count: {len(registrations) if registrations else 0}")
-    if not registrations:
-        print("[DEBUG] No active registrations found")
-        raise HTTPException(status_code=400, detail="No active registrations found")
-    
-    # Create QR code data (user ID and name)
-    qr_data = f"{user.id}:{user.name}"
-    
-    # Generate QR code image
-    qr = qrcode.QRCode(version=1, box_size=10, border=5)
-    qr.add_data(qr_data)
-    qr.make(fit=True)
-    
-    img = qr.make_image(fill_color="black", back_color="white")
-    
-    # Convert to base64
-    buffer = io.BytesIO()
-    img.save(buffer, format='PNG')
-    qr_base64 = base64.b64encode(buffer.getvalue()).decode()
-    
-    print("[DEBUG] QR code generated successfully")
-    return schemas.QRGenerateResponse(
-        qr_data=qr_data,
-        user_info={
-            "id": user.id,
-            "name": user.name,
-            "email": user.email,
-            "registrations": [{"package_name": reg.package.name} for reg in registrations]
-        }
-    )
+    try:
+        print(f"[DEBUG] QR request for name: {request.name}")
+        # Find user by name
+        user = crud.find_user_by_qr_data(db, request.name)
+        print(f"[DEBUG] User found: {user}")
+        if not user:
+            print("[DEBUG] User not found")
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        print(f"[DEBUG] User ID: {user.id}, Name: {user.name}")
+        
+        # Get user's active registrations
+        registrations = crud.get_active_registrations(db, user.id)
+        print(f"[DEBUG] Active registrations count: {len(registrations) if registrations else 0}")
+        if not registrations:
+            print("[DEBUG] No active registrations found")
+            raise HTTPException(status_code=400, detail="No active registrations found")
+        
+        # Create QR code data (user ID and name)
+        qr_data = f"{user.id}:{user.name}"
+        
+        # Generate QR code image
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+        
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        # Convert to base64
+        buffer = io.BytesIO()
+        img.save(buffer, format='PNG')
+        qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+        
+        print("[DEBUG] QR code generated successfully")
+        return schemas.QRGenerateResponse(
+            qr_data=qr_data,
+            user_info={
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "registrations": [{"package_name": reg.package.name} for reg in registrations]
+            }
+        )
+    except Exception as e:
+        print(f"[ERROR] QR generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"QR generation failed: {str(e)}")
 
 # Attendance endpoints
 @app.post("/api/attendance", response_model=schemas.AttendanceScanResponse)
