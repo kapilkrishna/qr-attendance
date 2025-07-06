@@ -8,9 +8,9 @@ def seed_database(db: Session):
     
     # Create class types
     class_types = [
-        {"name": "Beginner Tennis", "description": "Basic tennis skills for beginners"},
-        {"name": "Intermediate Tennis", "description": "Advanced techniques for intermediate players"},
-        {"name": "Advanced Tennis", "description": "Professional level training"}
+        {"name": "Beginner Tennis"},
+        {"name": "Intermediate Tennis"},
+        {"name": "Advanced Tennis"}
     ]
     
     for class_type_data in class_types:
