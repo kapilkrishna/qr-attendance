@@ -22,11 +22,12 @@ import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
+const ELITE_PACKAGE = { id: 4, name: 'Elite' };
+
 export default function CoachCancelClass() {
   const navigate = useNavigate();
-  const [packages, setPackages] = useState([]);
   const [classes, setClasses] = useState([]);
-  const [selectedPackage, setSelectedPackage] = useState('');
+  const [selectedPackage, setSelectedPackage] = useState(ELITE_PACKAGE.id);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedClass, setSelectedClass] = useState('');
   const [loading, setLoading] = useState(false);
@@ -40,8 +41,6 @@ export default function CoachCancelClass() {
       navigate('/coach');
       return;
     }
-
-    fetchPackages();
   }, [navigate]);
 
   useEffect(() => {
@@ -49,18 +48,6 @@ export default function CoachCancelClass() {
       fetchClasses();
     }
   }, [selectedPackage, selectedDate]);
-
-  const fetchPackages = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/packages`);
-      if (!response.ok) throw new Error('Failed to fetch packages');
-      const data = await response.json();
-      setPackages(data);
-    } catch (err) {
-      setError('Failed to load packages');
-      console.error('Error fetching packages:', err);
-    }
-  };
 
   const fetchClasses = async () => {
     setLoading(true);
@@ -170,11 +157,7 @@ export default function CoachCancelClass() {
                   label="Package"
                   sx={{ color: '#fff' }}
                 >
-                  {packages.map((pkg) => (
-                    <MenuItem key={pkg.id} value={pkg.id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>
-                      {pkg.name}
-                    </MenuItem>
-                  ))}
+                  <MenuItem key={ELITE_PACKAGE.id} value={ELITE_PACKAGE.id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>{ELITE_PACKAGE.name}</MenuItem>
                 </Select>
               </FormControl>
               <TextField

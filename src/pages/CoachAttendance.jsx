@@ -32,6 +32,8 @@ import SearchIcon from "@mui/icons-material/Search";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
+const ELITE_CLASS_TYPE = { id: 3, name: 'Elite' };
+
 export default function CoachAttendance() {
   const navigate = useNavigate();
   const [checkedInList, setCheckedInList] = useState([]);
@@ -44,8 +46,7 @@ export default function CoachAttendance() {
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
   const [date, setDate] = useState('');
-  const [classTypes, setClassTypes] = useState([]);
-  const [selectedType, setSelectedType] = useState('');
+  const [selectedType, setSelectedType] = useState(ELITE_CLASS_TYPE.id);
   
   const scannerRef = useRef(null);
   const isScanningRef = useRef(false);
@@ -97,14 +98,7 @@ export default function CoachAttendance() {
     }
   }, [selectedPackage, selectedDate]);
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/class_types`)
-      .then(res => res.json())
-      .then(data => setClassTypes(data))
-      .catch(() => setClassTypes([]));
-  }, []);
-
-  // New effect to fetch students when date and class type are selected
+  // Auto-load students when date and class type are selected
   useEffect(() => {
     if (date && selectedType) {
       fetchAllStudentsForClass();
@@ -203,83 +197,131 @@ export default function CoachAttendance() {
       const scanner = new Html5Qrcode("reader");
       scannerRef.current = scanner;
 
-      const devices = await Html5Qrcode.getCameras();
-      if (devices && devices.length) {
-        const cameraId = devices.find(device => device.label.toLowerCase().includes('back'))?.id || devices[0].id;
-        
-        await scanner.start(
-          cameraId,
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0,
-          },
-          async (decodedText) => {
-            if (!isScanningRef.current) {
-              isScanningRef.current = true;
-              
-              if (!scannedNamesRef.current.has(decodedText)) {
-                scannedNamesRef.current.add(decodedText);
-                
-                // Mark attendance via API
-                try {
-                  const response = await fetch(`${API_BASE_URL}/attendance`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      qr_data: decodedText,
-                      class_id: selectedClass,
-                      status: qrScanStatus
-                    })
-                  });
-
-                  const result = await response.json();
-                  
-                  if (result.success) {
-                    setCheckedInList(list => [...list, { 
-                      name: result.user_name, 
-                      time: new Date(),
-                      status: result.already_present ? 'Already Present' : (qrScanStatus === 'present' ? 'Present' : 'Late'),
-                      is_registered: result.is_registered,
-                      registration_message: result.registration_message
-                    }]);
-                    
-                    setLastScannedName(result.user_name);
-                    
-                    // Show success message
-                    if (!result.already_present) {
-                      setSuccessMessage(`${result.user_name} marked as ${qrScanStatus === 'present' ? 'Present' : 'Late'}`);
-                      setTimeout(() => setSuccessMessage(''), 3000);
-                    }
-                    
-                    // Refresh the student list
-                    fetchAllStudentsForClass();
-                  } else {
-                    setError(result.message);
-                  }
-                } catch (err) {
-                  setError('Failed to mark attendance');
-                  console.error('Attendance error:', err);
-                }
-              }
-              setError('');
-
-              setTimeout(() => {
-                isScanningRef.current = false;
-              }, 1000);
-            }
-          },
-          (error) => {
-            console.warn(error);
-          }
-        );
-        setIsScanning(true);
+      // First, check if we can get camera devices
+      let devices;
+      try {
+        devices = await Html5Qrcode.getCameras();
+      } catch (cameraError) {
+        console.error("Camera access error:", cameraError);
+        if (cameraError.name === 'NotAllowedError') {
+          setError("Camera access denied. Please allow camera permissions and try again.");
+        } else if (cameraError.name === 'NotFoundError') {
+          setError("No camera found on this device.");
+        } else if (cameraError.name === 'NotSupportedError') {
+          setError("Camera not supported on this device or browser.");
+        } else {
+          setError("Failed to access camera. Please check your browser settings and try again.");
+        }
+        return;
       }
+
+      if (!devices || devices.length === 0) {
+        setError("No cameras found on this device.");
+        return;
+      }
+
+      // Try to find a back camera first, then fall back to any available camera
+      const cameraId = devices.find(device => 
+        device.label.toLowerCase().includes('back') || 
+        device.label.toLowerCase().includes('rear')
+      )?.id || devices[0].id;
+      
+      console.log("Available cameras:", devices.map(d => ({ id: d.id, label: d.label })));
+      console.log("Selected camera:", cameraId);
+      
+      await scanner.start(
+        cameraId,
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0,
+        },
+        async (decodedText) => {
+          if (!isScanningRef.current) {
+            isScanningRef.current = true;
+            
+            if (!scannedNamesRef.current.has(decodedText)) {
+              scannedNamesRef.current.add(decodedText);
+              
+              // Mark attendance via API
+              try {
+                const response = await fetch(`${API_BASE_URL}/attendance`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    qr_data: decodedText,
+                    class_id: selectedClass,
+                    status: qrScanStatus
+                  })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                  setCheckedInList(list => [...list, { 
+                    name: result.user_name, 
+                    time: new Date(),
+                    status: result.already_present ? 'Already Present' : (qrScanStatus === 'present' ? 'Present' : 'Late'),
+                    is_registered: result.is_registered,
+                    registration_message: result.registration_message
+                  }]);
+                  
+                  setLastScannedName(result.user_name);
+                  
+                  // Show success message
+                  if (!result.already_present) {
+                    setSuccessMessage(`${result.user_name} marked as ${qrScanStatus === 'present' ? 'Present' : 'Late'}`);
+                    setTimeout(() => setSuccessMessage(''), 3000);
+                  }
+                  
+                  // Refresh the student list
+                  fetchAllStudentsForClass();
+                } else {
+                  setError(result.message);
+                }
+              } catch (err) {
+                setError('Failed to mark attendance');
+                console.error('Attendance error:', err);
+              }
+            }
+            setError('');
+
+            setTimeout(() => {
+              isScanningRef.current = false;
+            }, 1000);
+          }
+        },
+        (error) => {
+          console.warn("QR scanning error:", error);
+          // Don't show QR scanning errors to user unless they're critical
+        }
+      );
+      setIsScanning(true);
     } catch (err) {
       console.error("Failed to start scanner:", err);
-      setError("Failed to start camera: " + err.message);
+      let errorMessage = "Failed to start camera";
+      
+      if (err.message) {
+        errorMessage += ": " + err.message;
+      } else if (err.name) {
+        switch (err.name) {
+          case 'NotAllowedError':
+            errorMessage = "Camera access denied. Please allow camera permissions and try again.";
+            break;
+          case 'NotFoundError':
+            errorMessage = "No camera found on this device.";
+            break;
+          case 'NotSupportedError':
+            errorMessage = "Camera not supported on this device or browser.";
+            break;
+          default:
+            errorMessage = "Failed to start camera. Please check your browser settings and try again.";
+        }
+      }
+      
+      setError(errorMessage);
     }
   };
 
@@ -305,7 +347,8 @@ export default function CoachAttendance() {
       return;
     }
     setError('');
-      setIsScanning(true);
+    await fetchAllStudentsForClass();
+    setIsScanning(true);
   };
 
   const fetchUncheckedStudents = async () => {
@@ -628,30 +671,8 @@ export default function CoachAttendance() {
             label="Class Type"
             onChange={e => setSelectedType(e.target.value)}
             sx={{ color: '#fff' }}
-            MenuProps={{
-              PaperProps: {
-                sx: {
-                  bgcolor: 'rgba(44, 62, 100, 0.98)',
-                  color: '#fff',
-                },
-              },
-              MenuListProps: {
-                sx: {
-                  '& .Mui-selected': {
-                    bgcolor: '#3a3a5a !important',
-                    color: '#fff',
-                  },
-                  '& .MuiMenuItem-root:hover': {
-                    bgcolor: '#3a3a5a',
-                    color: '#fff',
-                  },
-                },
-              },
-            }}
           >
-            {classTypes.map(type => (
-              <MenuItem key={type.id} value={type.id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>{type.name}</MenuItem>
-            ))}
+            <MenuItem key={ELITE_CLASS_TYPE.id} value={ELITE_CLASS_TYPE.id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>{ELITE_CLASS_TYPE.name}</MenuItem>
           </Select>
         </FormControl>
         {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
@@ -791,7 +812,7 @@ export default function CoachAttendance() {
           color: '#fff',
         }}>
           <Typography variant="h6" gutterBottom sx={{ color: '#fff', fontWeight: 700 }}>
-            Students - {classTypes.find(t => t.id === selectedType)?.name} on {date}
+            Students - {ELITE_CLASS_TYPE.name} on {date}
           </Typography>
           
           {/* Search Bar */}
@@ -831,25 +852,25 @@ export default function CoachAttendance() {
                 <ListItem 
                   key={student.id} 
                   ref={el => studentRefs.current[student.id] = el}
-                  sx={{ 
-                    mb: 1, 
-                    borderRadius: '12px',
-                    background: student.status === 'unchecked' 
-                      ? 'rgba(44, 62, 100, 0.6)' 
-                      : 'rgba(44, 62, 100, 0.3)',
-                    border: student.status === 'unchecked' ? '2px solid #a259ff' : '1px solid transparent',
-                    minHeight: 64,
-                    alignItems: 'center',
+                  sx={{
                     display: 'flex',
-                    px: 3,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    minWidth: 0,
+                    px: 2,
                     py: 1.5,
+                    gap: 0,
                   }}
                 >
-                  {/* Name and chip */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 0 }}>
+                  {/* Name column with fixed width and ellipsis */}
+                  <Box sx={{ flex: '0 0 180px', minWidth: 0, maxWidth: 180, overflow: 'hidden' }}>
                     <Typography variant="body1" sx={{ color: '#fff', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {student.name}
                     </Typography>
+                  </Box>
+                  {/* Status column, always right-aligned and same width */}
+                  <Box sx={{ flex: '0 0 130px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                     {student.status !== 'unchecked' && (
                       <Chip 
                         label={student.status === 'present' ? 'Present' : student.status === 'late' ? 'Late' : student.status === 'missing' ? 'Absent' : student.status} 
@@ -860,86 +881,18 @@ export default function CoachAttendance() {
                           fontWeight: 'bold',
                           fontSize: '1rem',
                           height: 40,
-                          px: 2,
-                          ml: 3,
-                          display: 'flex',
-                          alignItems: 'center',
+                          minWidth: 120,
+                          maxWidth: 120,
+                          justifyContent: 'center',
+                          textAlign: 'center',
                           cursor: 'pointer',
                         }}
                         onClick={e => { e.stopPropagation(); setMenuOpenId(student.id); }}
                       />
                     )}
-                  </Box>
-                  {/* For unmarked students, always show the three buttons */}
-                  {student.status === 'unchecked' ? (
-                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, alignItems: 'stretch', ml: { xs: 0, sm: 3 } }}>
-                      <Button
-                        type="button"
-                        variant='outlined'
-                        size='medium'
-                        sx={{
-                          borderColor: '#4caf50',
-                          color: '#4caf50',
-                          fontWeight: 'bold',
-                          borderRadius: '8px',
-                          minWidth: { xs: 0, sm: 90 },
-                          px: { xs: 1, sm: 3 },
-                          width: { xs: '100%', sm: 'auto' },
-                          height: 40,
-                          display: 'flex',
-                          alignItems: 'center',
-                          '&:hover': { bgcolor: '#45a049', color: '#fff', borderColor: '#45a049' }
-                        }}
-                        onClick={() => { updateStudentStatus(student.id, 'present'); setMenuOpenId(null); }}
-                      >
-                        PRESENT
-                      </Button>
-                      <Button
-                        type="button"
-                        variant='outlined'
-                        size='medium'
-                        sx={{
-                          borderColor: '#ff9800',
-                          color: '#ff9800',
-                          fontWeight: 'bold',
-                          borderRadius: '8px',
-                          minWidth: { xs: 0, sm: 90 },
-                          px: { xs: 1, sm: 3 },
-                          width: { xs: '100%', sm: 'auto' },
-                          height: 40,
-                          display: 'flex',
-                          alignItems: 'center',
-                          '&:hover': { bgcolor: '#f57c00', color: '#fff', borderColor: '#f57c00' }
-                        }}
-                        onClick={() => { updateStudentStatus(student.id, 'late'); setMenuOpenId(null); }}
-                      >
-                        LATE
-                      </Button>
-                      <Button
-                        type="button"
-                        variant='outlined'
-                        size='medium'
-                        sx={{
-                          borderColor: '#f44336',
-                          color: '#f44336',
-                          fontWeight: 'bold',
-                          borderRadius: '8px',
-                          minWidth: { xs: 0, sm: 90 },
-                          px: { xs: 1, sm: 3 },
-                          width: { xs: '100%', sm: 'auto' },
-                          height: 40,
-                          display: 'flex',
-                          alignItems: 'center',
-                          '&:hover': { bgcolor: '#d32f2f', color: '#fff', borderColor: '#d32f2f' }
-                        }}
-                        onClick={() => { updateStudentStatus(student.id, 'missing'); setMenuOpenId(null); }}
-                      >
-                        ABSENT
-                      </Button>
-                    </Box>
-                  ) : menuOpenId === student.id && (
-                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, alignItems: 'stretch', ml: { xs: 0, sm: 3 } }} onClick={e => e.stopPropagation()}>
-                      {student.status !== 'present' && (
+                    {/* For unmarked students, always show the three buttons */}
+                    {student.status === 'unchecked' ? (
+                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, alignItems: 'stretch', ml: { xs: 0, sm: 3 } }}>
                         <Button
                           type="button"
                           variant='outlined'
@@ -961,8 +914,6 @@ export default function CoachAttendance() {
                         >
                           PRESENT
                         </Button>
-                      )}
-                      {student.status !== 'late' && (
                         <Button
                           type="button"
                           variant='outlined'
@@ -984,8 +935,6 @@ export default function CoachAttendance() {
                         >
                           LATE
                         </Button>
-                      )}
-                      {student.status !== 'missing' && (
                         <Button
                           type="button"
                           variant='outlined'
@@ -1007,32 +956,104 @@ export default function CoachAttendance() {
                         >
                           ABSENT
                         </Button>
-                      )}
-                      {student.status !== 'unchecked' && (
-                        <Button
-                          type="button"
-                          variant='outlined'
-                          size='medium'
-                          sx={{
-                            borderColor: '#a259ff',
-                            color: '#a259ff',
-                            fontWeight: 'bold',
-                            borderRadius: '8px',
-                            minWidth: { xs: 0, sm: 90 },
-                            px: { xs: 1, sm: 3 },
-                            width: { xs: '100%', sm: 'auto' },
-                            height: 40,
-                            display: 'flex',
-                            alignItems: 'center',
-                            '&:hover': { bgcolor: 'rgba(162, 89, 255, 0.1)', color: '#a259ff', borderColor: '#a259ff' }
-                          }}
-                          onClick={() => { uncheckStudentAttendance(student.id); setMenuOpenId(null); }}
-                        >
-                          UNMARKED
-                        </Button>
-                      )}
-                    </Box>
-                  )}
+                      </Box>
+                    ) : menuOpenId === student.id && (
+                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, alignItems: 'stretch', ml: { xs: 0, sm: 3 } }} onClick={e => e.stopPropagation()}>
+                        {student.status !== 'present' && (
+                          <Button
+                            type="button"
+                            variant='outlined'
+                            size='medium'
+                            sx={{
+                              borderColor: '#4caf50',
+                              color: '#4caf50',
+                              fontWeight: 'bold',
+                              borderRadius: '8px',
+                              minWidth: { xs: 0, sm: 90 },
+                              px: { xs: 1, sm: 3 },
+                              width: { xs: '100%', sm: 'auto' },
+                              height: 40,
+                              display: 'flex',
+                              alignItems: 'center',
+                              '&:hover': { bgcolor: '#45a049', color: '#fff', borderColor: '#45a049' }
+                            }}
+                            onClick={() => { updateStudentStatus(student.id, 'present'); setMenuOpenId(null); }}
+                          >
+                            PRESENT
+                          </Button>
+                        )}
+                        {student.status !== 'late' && (
+                          <Button
+                            type="button"
+                            variant='outlined'
+                            size='medium'
+                            sx={{
+                              borderColor: '#ff9800',
+                              color: '#ff9800',
+                              fontWeight: 'bold',
+                              borderRadius: '8px',
+                              minWidth: { xs: 0, sm: 90 },
+                              px: { xs: 1, sm: 3 },
+                              width: { xs: '100%', sm: 'auto' },
+                              height: 40,
+                              display: 'flex',
+                              alignItems: 'center',
+                              '&:hover': { bgcolor: '#f57c00', color: '#fff', borderColor: '#f57c00' }
+                            }}
+                            onClick={() => { updateStudentStatus(student.id, 'late'); setMenuOpenId(null); }}
+                          >
+                            LATE
+                          </Button>
+                        )}
+                        {student.status !== 'missing' && (
+                          <Button
+                            type="button"
+                            variant='outlined'
+                            size='medium'
+                            sx={{
+                              borderColor: '#f44336',
+                              color: '#f44336',
+                              fontWeight: 'bold',
+                              borderRadius: '8px',
+                              minWidth: { xs: 0, sm: 90 },
+                              px: { xs: 1, sm: 3 },
+                              width: { xs: '100%', sm: 'auto' },
+                              height: 40,
+                              display: 'flex',
+                              alignItems: 'center',
+                              '&:hover': { bgcolor: '#d32f2f', color: '#fff', borderColor: '#d32f2f' }
+                            }}
+                            onClick={() => { updateStudentStatus(student.id, 'missing'); setMenuOpenId(null); }}
+                          >
+                            ABSENT
+                          </Button>
+                        )}
+                        {student.status !== 'unchecked' && (
+                          <Button
+                            type="button"
+                            variant='outlined'
+                            size='medium'
+                            sx={{
+                              borderColor: '#a259ff',
+                              color: '#a259ff',
+                              fontWeight: 'bold',
+                              borderRadius: '8px',
+                              minWidth: { xs: 0, sm: 90 },
+                              px: { xs: 1, sm: 3 },
+                              width: { xs: '100%', sm: 'auto' },
+                              height: 40,
+                              display: 'flex',
+                              alignItems: 'center',
+                              '&:hover': { bgcolor: 'rgba(162, 89, 255, 0.1)', color: '#a259ff', borderColor: '#a259ff' }
+                            }}
+                            onClick={() => { uncheckStudentAttendance(student.id); setMenuOpenId(null); }}
+                          >
+                            UNMARKED
+                          </Button>
+                        )}
+                      </Box>
+                    )}
+                  </Box>
                 </ListItem>
           ))}
         </List>
@@ -1048,7 +1069,7 @@ export default function CoachAttendance() {
         fullWidth
       >
         <DialogTitle>
-          Manual Attendance - {classTypes.find(t => t.id === selectedType)?.name} on {date}
+          Manual Attendance - {ELITE_CLASS_TYPE.name} on {date}
         </DialogTitle>
         <DialogContent>
           {loadingUnchecked ? (

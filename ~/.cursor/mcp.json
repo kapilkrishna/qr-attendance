@@ -14,9 +14,12 @@
         "POSTGRES_CONNECTION_STRING": "your_postgres_connection_string_here"
       }
     },
-    "render-cli": {
-      "command": "render",
-      "args": ["--help"]
+    "render": {
+      "command": "python",
+      "args": ["/Users/kapil/Desktop/Projects/qr-attendance/render-mcp-server.py"],
+      "env": {
+        "RENDER_API_KEY": "your_render_api_key_here"
+      }
     }
   }
 } 

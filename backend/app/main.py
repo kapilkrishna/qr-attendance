@@ -20,13 +20,14 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Tennis Academy MVP API", version="1.0.0")
 
 # CORS middleware
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://192.168.1.171:5173").split(",")
+cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://localhost:5174,https://localhost:5173,https://localhost:5174,http://192.168.1.171:5173,https://192.168.1.171:5173,http://192.168.1.171:5174,https://192.168.1.171:5174").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|192\.168\.1\.171)(:\d+)?",
 )
 
 # Dependency
@@ -189,38 +190,25 @@ def generate_qr_code(request: schemas.QRGenerateRequest, db: Session = Depends(g
                 func.lower(models.User.name) == func.lower(request.name)
             ).first()
         
-        print(f"[DEBUG] User found: {user}")
+        # If still not found, create a new user
         if not user:
-            print("[DEBUG] User not found with any method")
-            raise HTTPException(status_code=404, detail=f"User '{request.name}' not found. Please check the spelling or register for a class first.")
+            print(f"[DEBUG] User not found, creating new user for name: {request.name}")
+            user = crud.create_user_for_attendance(db, request.name)
         
+        print(f"[DEBUG] User found or created: {user}")
         print(f"[DEBUG] User ID: {user.id}, Name: {user.name}")
         
-        # Get user's active registrations
+        # Get user's active registrations (optional)
         registrations = crud.get_active_registrations(db, user.id)
         print(f"[DEBUG] Active registrations count: {len(registrations) if registrations else 0}")
-        if not registrations:
-            print("[DEBUG] No active registrations found")
-            raise HTTPException(status_code=400, detail=f"No active registrations found for {user.name}. Please register for a class first.")
-        
-        # Validate registrations and packages
         valid_registrations = []
-        invalid_registrations = []
-        for reg in registrations:
-            if reg and reg.package and hasattr(reg.package, 'name'):
-                valid_registrations.append(reg)
-            else:
-                print(f"[DEBUG] Invalid registration or package: {reg}")
-                invalid_registrations.append(reg)
-        
-        if not valid_registrations:
-            print("[DEBUG] No valid registrations found")
-            if invalid_registrations:
-                error_msg = f"No valid registrations found for {user.name}. Found {len(invalid_registrations)} registrations with invalid package references. Please contact support or try registering again."
-            else:
-                error_msg = f"No active registrations found for {user.name}. Please register for a class first."
-            raise HTTPException(status_code=400, detail=error_msg)
-        
+        if registrations:
+            for reg in registrations:
+                if reg and reg.package and hasattr(reg.package, 'name'):
+                    valid_registrations.append(reg)
+                else:
+                    print(f"[DEBUG] Invalid registration or package: {reg}")
+        # No longer require valid_registrations to proceed
         # Create QR code data (user ID and name)
         qr_data = f"{user.id}:{user.name}"
         

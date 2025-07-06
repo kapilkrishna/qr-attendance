@@ -60,9 +60,6 @@ export default function CoachLogin() {
       <Typography variant="h4" gutterBottom align="center">
         Coach Portal
       </Typography>
-      <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 4 }}>
-        Enter your password to access coach features
-      </Typography>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -126,26 +123,6 @@ export default function CoachLogin() {
           </Box>
         </CardContent>
       </Card>
-
-      <Box sx={{ mt: 3, textAlign: 'center' }}>
-        <Card sx={{
-          background: 'rgba(44, 62, 100, 0.85)',
-          borderRadius: '16px',
-          boxShadow: '0 4px 16px 0 rgba(31, 38, 135, 0.18)',
-          color: '#fff',
-          display: 'inline-block',
-          px: 4, py: 3
-        }}>
-          <Typography variant="body2" sx={{ fontWeight: 600, mb: 1, color: '#fff' }}>
-            Coach Features:
-          </Typography>
-          <Box sx={{ textAlign: 'left', color: '#e0e0e0', fontSize: '1rem', lineHeight: 2 }}>
-            <span style={{ display: 'block' }}>• Take attendance using QR codes</span>
-            <span style={{ display: 'block' }}>• Cancel classes</span>
-            <span style={{ display: 'block' }}>• View attendance records</span>
-          </Box>
-        </Card>
-      </Box>
     </Box>
   );
 } 
