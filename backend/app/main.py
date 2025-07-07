@@ -54,7 +54,14 @@ def authenticate_coach(auth: schemas.CoachAuthRequest):
 
 # User endpoints
 @app.post("/api/users")
-def create_user(name: str, email: str, role: str = "student", db: Session = Depends(get_db)):
+def create_user(request: dict, db: Session = Depends(get_db)):
+    name = request.get("name")
+    email = request.get("email")
+    role = request.get("role", "student")
+    
+    if not name or not email:
+        raise HTTPException(status_code=400, detail="Name and email are required")
+    
     return crud.create_user(db, name, email, role)
 
 @app.get("/api/users")
