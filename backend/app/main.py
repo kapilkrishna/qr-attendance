@@ -184,6 +184,16 @@ def delete_attendance(class_id: int, user_id: int, db: Session = Depends(get_db)
     else:
         raise HTTPException(status_code=404, detail="Attendance record not found")
 
+@app.delete("/api/attendance/class/{class_id}/all")
+def delete_all_attendance_for_class(class_id: int, db: Session = Depends(get_db)):
+    """Delete all attendance records for a class"""
+    records = db.query(models.Attendance).filter(models.Attendance.class_id == class_id).all()
+    count = len(records)
+    for record in records:
+        db.delete(record)
+    db.commit()
+    return {"message": f"Deleted {count} attendance record(s) for class_id {class_id}."}
+
 # QR Code endpoints
 @app.post("/api/generate_qr", response_model=schemas.QRGenerateResponse)
 def generate_qr_code(request: schemas.QRGenerateRequest, db: Session = Depends(get_db)):
