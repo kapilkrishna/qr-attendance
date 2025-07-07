@@ -12,10 +12,6 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  MenuItem,
-  Select,
-  InputLabel,
-  FormControl,
   Alert,
   CircularProgress
 } from '@mui/material';
@@ -31,7 +27,6 @@ export default function Packages() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [name, setName] = useState('');
-  const [selectedDay, setSelectedDay] = useState('');
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -62,7 +57,6 @@ export default function Packages() {
     setDialogOpen(true);
     setSelectedPackage(pkg);
     setName('');
-    setSelectedDay('');
     setSuccess('');
     setError('');
   };
@@ -75,14 +69,14 @@ export default function Packages() {
   };
 
   const handleSubmit = async () => {
-    if (!name.trim() || !selectedDay || !selectedPackage) {
-      setError('Please enter your name and select a day.');
+    if (!name.trim() || !selectedPackage) {
+      setError('Please enter your name.');
       return;
     }
     setError('');
     setSuccess('');
     try {
-      // 1. Create user (or get existing)
+      // Create user (or get existing)
       let userId = null;
       let userEmail = `${name.trim().toLowerCase().replace(/ /g, '.') + '@tennisacademy.com'}`;
       let userRes = await fetch(`${API_BASE_URL}/users`, {
@@ -104,25 +98,9 @@ export default function Packages() {
         setError('Could not create or find user.');
         return;
       }
-      // 2. Register user for selected package
-      let regRes = await fetch(`${API_BASE_URL}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: userId,
-          package_id: selectedPackage.id,
-          start_date: selectedDay,
-          end_date: selectedPackage.name === "Elite Summer 2025" ? "2025-08-15" : selectedDay,
-          status: 'active'
-        })
-      });
-      if (!regRes.ok) {
-        const regErr = await regRes.json();
-        setError(regErr.detail || 'Failed to register for package.');
-        return;
-      }
+      
       setDialogOpen(false);
-      navigate('/qr', { state: { name, selectedDay } });
+      navigate('/qr', { state: { name, packageName: selectedPackage.name } });
     } catch (err) {
       setError('An error occurred. Please try again.');
     }
@@ -179,6 +157,9 @@ export default function Packages() {
                 <Typography variant="body2" sx={{ mb: 2, flexGrow: 1, color: '#e0e0e0', fontWeight: 500, lineHeight: 1.6, fontSize: '1.2rem' }}>
                   {pkg.description}
                 </Typography>
+                <Typography variant="body2" sx={{ mb: 2, color: '#a259ff', fontWeight: 600, fontSize: '1.1rem' }}>
+                  Class Date: {new Date(pkg.start_date).toLocaleDateString()}
+                </Typography>
                 <Button
                   variant="contained"
                   fullWidth
@@ -199,7 +180,7 @@ export default function Packages() {
                   }}
                   onClick={() => handleOpenDialog(pkg)}
                 >
-                  Select Day
+                  Register
                 </Button>
               </CardContent>
             </Card>
@@ -216,9 +197,12 @@ export default function Packages() {
         }
       }}>
         <DialogTitle sx={{ color: '#fff', fontWeight: 700, fontSize: '1.5rem' }}>
-          Select Day - {selectedPackage?.name}
+          Register for {selectedPackage?.name}
         </DialogTitle>
         <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2, color: '#e0e0e0' }}>
+            Class Date: {selectedPackage ? new Date(selectedPackage.start_date).toLocaleDateString() : ''}
+          </Typography>
           <TextField
             label="Full Name *"
             fullWidth
@@ -236,53 +220,6 @@ export default function Packages() {
             }}
             InputLabelProps={{ sx: { color: '#bdbdbd' } }}
           />
-          <FormControl fullWidth margin="normal" sx={{
-            '& .MuiInputBase-root': {
-              borderRadius: '12px',
-              background: 'rgba(44, 62, 100, 0.85)',
-              color: '#fff',
-            },
-            '& .MuiInputLabel-root': { color: '#bdbdbd' },
-            '& .MuiSelect-icon': { color: '#fff' },
-            '& .MuiMenu-paper': {
-              background: 'rgba(44, 62, 100, 0.98)',
-              color: '#fff',
-            }
-          }}>
-            <InputLabel>Select Day *</InputLabel>
-            <Select
-              value={selectedDay}
-              label="Select Day *"
-              onChange={e => setSelectedDay(e.target.value)}
-              sx={{ color: '#fff' }}
-              MenuProps={{
-                PaperProps: {
-                  sx: {
-                    bgcolor: 'rgba(44, 62, 100, 0.98)',
-                    color: '#fff',
-                  },
-                },
-                MenuListProps: {
-                  sx: {
-                    '& .Mui-selected': {
-                      bgcolor: '#3a3a5a !important',
-                      color: '#fff',
-                    },
-                    '& .MuiMenuItem-root:hover': {
-                      bgcolor: '#3a3a5a',
-                      color: '#fff',
-                    },
-                  },
-                },
-              }}
-            >
-              {selectedPackage?.options?.map(option => (
-                <MenuItem key={option.id} value={option.start_date} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>
-                  {option.label}
-                </MenuItem>
-              )) || []}
-            </Select>
-          </FormControl>
           {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
         </DialogContent>
         <DialogActions sx={{ pb: 2, pr: 3 }}>
@@ -298,7 +235,7 @@ export default function Packages() {
           <Button
             onClick={handleSubmit}
             variant="contained"
-            disabled={!name.trim() || !selectedDay}
+            disabled={!name.trim()}
             sx={{
               background: 'linear-gradient(90deg, #a259ff 0%, #3a8dde 100%)',
               color: '#fff',
@@ -315,7 +252,7 @@ export default function Packages() {
               }
             }}
           >
-            Confirm
+            Generate QR Code
           </Button>
         </DialogActions>
       </Dialog>
