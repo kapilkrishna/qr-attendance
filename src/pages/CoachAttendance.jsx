@@ -250,7 +250,7 @@ export default function CoachAttendance() {
               
               // Mark attendance via API
               try {
-                const response = await fetch(`${API_BASE_URL}/attendance`, {
+                const response = await fetch(`${API_BASE_URL}/attendance/scan`, {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',

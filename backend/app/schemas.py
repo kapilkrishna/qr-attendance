@@ -87,6 +87,8 @@ class AttendanceScanResponse(BaseModel):
     message: str
     user_name: Optional[str] = None
     already_present: bool = False
+    is_registered: bool = False
+    registration_message: Optional[str] = None
 
 # Coach authentication
 class CoachAuthRequest(BaseModel):

@@ -246,23 +246,41 @@ def generate_qr_code(request: schemas.QRGenerateRequest, db: Session = Depends(g
 def scan_attendance(request: schemas.AttendanceScanRequest, db: Session = Depends(get_db)):
     """Scan QR code and mark attendance"""
     try:
-        # Parse QR data (format: "user_id:user_name")
-        qr_parts = request.qr_data.split(":", 1)
-        if len(qr_parts) != 2:
-            raise HTTPException(status_code=400, detail="Invalid QR code format")
+        user = None
+        is_registered = False
+        registration_message = None
         
-        user_id = int(qr_parts[0])
-        user_name = qr_parts[1]
+        # Try to parse QR data as "user_id:user_name" (registered user)
+        try:
+            qr_parts = request.qr_data.split(":", 1)
+            if len(qr_parts) == 2:
+                user_id = int(qr_parts[0])
+                user_name = qr_parts[1]
+                
+                # Verify user exists
+                user = crud.get_user(db, user_id)
+                if user:
+                    is_registered = True
+                    registration_message = "Registered student"
+        except (ValueError, IndexError):
+            pass
         
-        # Verify user exists
-        user = crud.get_user(db, user_id)
+        # If not a registered user, treat the QR data as a name and create a new user
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            user_name = request.qr_data
+            # Try to find user by name first
+            user = crud.find_user_by_qr_data(db, user_name)
+            if not user:
+                # Create a new user
+                user = crud.create_user_for_attendance(db, user_name)
+                registration_message = "New student added"
+            else:
+                registration_message = "Student found by name"
         
         # Check if already marked present
         existing_attendance = db.query(models.Attendance).filter(
             models.Attendance.class_id == request.class_id,
-            models.Attendance.user_id == user_id
+            models.Attendance.user_id == user.id
         ).first()
         
         if existing_attendance and existing_attendance.status in ["present", "late"]:
@@ -270,17 +288,21 @@ def scan_attendance(request: schemas.AttendanceScanRequest, db: Session = Depend
                 success=False,
                 message=f"Already marked {existing_attendance.status}",
                 user_name=user.name,
-                already_present=True
+                already_present=True,
+                is_registered=is_registered,
+                registration_message=registration_message
             )
         
         # Mark attendance
-        attendance = crud.mark_attendance(db, request.class_id, user_id, request.status)
+        attendance = crud.mark_attendance(db, request.class_id, user.id, request.status)
         
         return schemas.AttendanceScanResponse(
             success=True,
             message="Attendance marked successfully",
             user_name=user.name,
-            already_present=False
+            already_present=False,
+            is_registered=is_registered,
+            registration_message=registration_message
         )
         
     except HTTPException:
