@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 # User schemas
 class UserBase(BaseModel):
@@ -22,39 +22,25 @@ class PackageBase(BaseModel):
     name: str
     description: Optional[str] = None
     price: float
-    duration_type: str
-    num_classes: Optional[int] = None
-    num_weeks: Optional[int] = None
-    class_type_id: Optional[int] = None
+    start_date: date
+    end_date: date
 
 class PackageCreate(PackageBase):
     pass
 
-class PackageOptionBase(BaseModel):
-    label: str
-    start_date: date
-    end_date: date
-
-class PackageOptionCreate(PackageOptionBase):
-    pass
-
-class PackageOption(PackageOptionBase):
-    id: int
-    class Config:
-        from_attributes = True
-
 class Package(PackageBase):
     id: int
-    options: Optional[List[PackageOption]] = []
     
     class Config:
         from_attributes = True
 
 # Class schemas
 class ClassBase(BaseModel):
+    package_id: int
     date: date
-    package_id: int | None = None
-    class_type_id: int
+    start_time: time
+    end_time: time
+    location: str
     cancelled: bool = False
 
 class ClassCreate(ClassBase):
@@ -82,27 +68,6 @@ class Attendance(AttendanceBase):
     class Config:
         from_attributes = True
 
-# Payment schemas
-class PaymentBase(BaseModel):
-    user_id: int
-    month: str
-    invoice_code: str
-    amount_due: float
-    amount_paid: float = 0
-    paid: bool = False
-    payment_method: Optional[str] = None
-    payment_date: Optional[date] = None
-
-class PaymentCreate(PaymentBase):
-    pass
-
-class Payment(PaymentBase):
-    id: int
-    created_at: datetime
-    
-    class Config:
-        from_attributes = True
-
 # QR Code schemas
 class QRGenerateRequest(BaseModel):
     name: str
@@ -122,8 +87,6 @@ class AttendanceScanResponse(BaseModel):
     message: str
     user_name: Optional[str] = None
     already_present: bool = False
-    is_registered: Optional[bool] = None
-    registration_message: Optional[str] = None
 
 # Coach authentication
 class CoachAuthRequest(BaseModel):
@@ -131,16 +94,4 @@ class CoachAuthRequest(BaseModel):
 
 class CoachAuthResponse(BaseModel):
     authenticated: bool
-    message: str
-
-# ClassType schemas
-class ClassTypeBase(BaseModel):
-    name: str
-
-class ClassTypeCreate(ClassTypeBase):
-    pass
-
-class ClassType(ClassTypeBase):
-    id: int
-    class Config:
-        from_attributes = True 
+    message: str 
