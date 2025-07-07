@@ -158,7 +158,7 @@ export default function Packages() {
                   {pkg.description}
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 2, color: '#a259ff', fontWeight: 600, fontSize: '1.1rem' }}>
-                  Class Date: {new Date(pkg.start_date).toLocaleDateString()}
+                  Class Date: {(() => { const [year, month, day] = pkg.start_date.split('-'); return `${month}/${day}/${year}`; })()}
                 </Typography>
                 <Button
                   variant="contained"
@@ -201,7 +201,7 @@ export default function Packages() {
         </DialogTitle>
         <DialogContent>
           <Typography variant="body1" sx={{ mb: 2, color: '#e0e0e0' }}>
-            Class Date: {selectedPackage ? new Date(selectedPackage.start_date).toLocaleDateString() : ''}
+            Class Date: {selectedPackage ? (() => { const [year, month, day] = selectedPackage.start_date.split('-'); return `${month}/${day}/${year}`; })() : ''}
           </Typography>
           <TextField
             label="Full Name *"

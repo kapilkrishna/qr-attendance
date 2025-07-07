@@ -639,7 +639,7 @@ export default function CoachAttendance() {
           >
             {classes.map(cls => (
               <MenuItem key={cls.id} value={cls.id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>
-                {new Date(cls.date).toLocaleDateString()}
+                {(() => { const [year, month, day] = cls.date.split('-'); return `${month}/${day}/${year}`; })()}
               </MenuItem>
             ))}
           </Select>
