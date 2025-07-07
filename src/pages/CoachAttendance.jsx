@@ -233,7 +233,6 @@ export default function CoachAttendance() {
         cameraId,
         {
           fps: 10,
-          qrbox: { width: 250, height: 250 },
           aspectRatio: 1.0,
         },
         async (decodedText) => {
@@ -576,6 +575,15 @@ export default function CoachAttendance() {
       if (!response.ok) throw new Error('Failed to uncheck attendance');
       const result = await response.json();
       if (result.success) {
+        // Remove this specific user's QR data from the scanned names set
+        // QR data format is "user_id:user_name", so we can find and remove entries that start with this user_id
+        const userIdStr = userId.toString();
+        for (const qrData of scannedNamesRef.current) {
+          if (qrData.startsWith(userIdStr + ':')) {
+            scannedNamesRef.current.delete(qrData);
+            break;
+          }
+        }
         // Refresh the student list
         fetchAllStudentsForClass();
       }
@@ -634,8 +642,6 @@ export default function CoachAttendance() {
           },
           '& .MuiInputLabel-root': { color: '#bdbdbd' },
           '& .MuiSelect-icon': { color: '#fff' },
-          m: { xs: 0, sm: 'normal' },
-          p: { xs: 0.5, sm: 0 },
         }}>
           <TextField
             label="Date"
@@ -643,7 +649,6 @@ export default function CoachAttendance() {
             value={date}
             onChange={e => setDate(e.target.value)}
             fullWidth
-            sx={{ width: '100%' }}
             InputLabelProps={{ shrink: true, sx: { color: '#bdbdbd' } }}
             InputProps={{
               sx: {
@@ -721,25 +726,36 @@ export default function CoachAttendance() {
             <Typography variant="h6" sx={{ color: '#fff', mb: 2, fontWeight: 600 }}>
               QR Scan Status
             </Typography>
-            <FormControl sx={{ minWidth: 200, mb: 2 }}>
-              <InputLabel sx={{ color: '#bdbdbd' }}>Mark students as</InputLabel>
+            <Typography variant="body1" sx={{ color: '#bdbdbd', mb: 2, fontSize: '1rem' }}>
+              Mark students as:
+            </Typography>
+            <FormControl sx={{ minWidth: 250, mb: 2 }}>
               <Select
                 value={qrScanStatus}
                 onChange={(e) => setQrScanStatus(e.target.value)}
+                displayEmpty
                 sx={{
                   color: '#fff',
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  borderRadius: '12px',
+                  background: qrScanStatus === 'present' ? '#4caf50' : '#ff9800',
                   '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: qrScanStatus === 'present' ? '#4caf50' : '#ff9800',
-                    borderWidth: '2px',
+                    borderColor: 'transparent',
+                    borderWidth: '0px',
                   },
                   '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: qrScanStatus === 'present' ? '#45a049' : '#f57c00',
+                    borderColor: 'transparent',
                   },
                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: qrScanStatus === 'present' ? '#4caf50' : '#ff9800',
+                    borderColor: 'transparent',
                   },
                   '& .MuiSvgIcon-root': {
-                    color: '#bdbdbd',
+                    color: '#fff',
+                  },
+                  '& .MuiSelect-select': {
+                    padding: '12px 16px',
+                    textAlign: 'center',
                   },
                 }}
                 MenuProps={{
@@ -748,6 +764,9 @@ export default function CoachAttendance() {
                       bgcolor: 'rgba(44, 62, 100, 0.95)',
                       color: '#fff',
                       '& .MuiMenuItem-root': {
+                        fontSize: '1.1rem',
+                        fontWeight: 600,
+                        padding: '12px 16px',
                         '&:hover': {
                           bgcolor: 'rgba(162, 89, 255, 0.2)',
                         },
@@ -756,15 +775,35 @@ export default function CoachAttendance() {
                   },
                 }}
               >
-                <MenuItem value="present" sx={{ color: '#4caf50', fontWeight: 600 }}>
+                <MenuItem value="present" sx={{ 
+                  color: '#fff',
+                  bgcolor: '#4caf50',
+                  fontWeight: 600,
+                  fontSize: '1.1rem',
+                  textAlign: 'center',
+                  justifyContent: 'center',
+                  '&:hover': {
+                    bgcolor: '#45a049',
+                  }
+                }}>
                   Present
                 </MenuItem>
-                <MenuItem value="late" sx={{ color: '#ff9800', fontWeight: 600 }}>
+                <MenuItem value="late" sx={{ 
+                  color: '#fff',
+                  bgcolor: '#ff9800',
+                  fontWeight: 600,
+                  fontSize: '1.1rem',
+                  textAlign: 'center',
+                  justifyContent: 'center',
+                  '&:hover': {
+                    bgcolor: '#f57c00',
+                  }
+                }}>
                   Late
                 </MenuItem>
               </Select>
             </FormControl>
-            <Typography variant="body2" sx={{ color: '#bdbdbd', fontStyle: 'italic' }}>
+            <Typography variant="body1" sx={{ color: '#bdbdbd', fontStyle: 'italic', fontSize: '1rem' }}>
               Students scanned will be marked as {qrScanStatus === 'present' ? 'Present' : 'Late'}
             </Typography>
           </Box>
