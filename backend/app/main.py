@@ -173,6 +173,15 @@ def cancel_class_endpoint(class_id: int, db: Session = Depends(get_db)):
     
     return {"message": "Class cancelled successfully"}
 
+@app.delete("/api/classes/{class_id}")
+def delete_class(class_id: int, db: Session = Depends(get_db)):
+    db_class = crud.get_class(db, class_id)
+    if not db_class:
+        raise HTTPException(status_code=404, detail="Class not found")
+    db.delete(db_class)
+    db.commit()
+    return {"message": "Class deleted"}
+
 # QR Code endpoints
 @app.post("/api/generate_qr", response_model=schemas.QRGenerateResponse)
 def generate_qr_code(request: schemas.QRGenerateRequest, db: Session = Depends(get_db)):
