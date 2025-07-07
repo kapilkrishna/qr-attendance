@@ -32,8 +32,6 @@ import SearchIcon from "@mui/icons-material/Search";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
-const ELITE_CLASS_TYPE = { id: 3, name: 'Elite' };
-
 export default function CoachAttendance() {
   const navigate = useNavigate();
   const [checkedInList, setCheckedInList] = useState([]);
@@ -46,7 +44,7 @@ export default function CoachAttendance() {
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
   const [date, setDate] = useState('');
-  const [selectedType, setSelectedType] = useState(ELITE_CLASS_TYPE.id);
+  const [selectedType, setSelectedType] = useState('');
   
   const scannerRef = useRef(null);
   const isScanningRef = useRef(false);
@@ -111,6 +109,11 @@ export default function CoachAttendance() {
       if (!response.ok) throw new Error('Failed to fetch packages');
       const data = await response.json();
       setPackages(data);
+      if (data.length > 0) {
+        setSelectedType(data[0].id);
+      } else {
+        setSelectedType('');
+      }
     } catch (err) {
       setError('Failed to load packages');
       console.error('Error fetching packages:', err);
@@ -669,7 +672,7 @@ export default function CoachAttendance() {
           },
           '& .MuiInputLabel-root': { color: '#bdbdbd' },
           '& .MuiSelect-icon': { color: '#fff' },
-        }}>
+        }} disabled={packages.length === 0}>
           <InputLabel>Class Type</InputLabel>
           <Select
             value={selectedType}
@@ -677,9 +680,14 @@ export default function CoachAttendance() {
             onChange={e => setSelectedType(e.target.value)}
             sx={{ color: '#fff' }}
           >
-            <MenuItem key={ELITE_CLASS_TYPE.id} value={ELITE_CLASS_TYPE.id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>{ELITE_CLASS_TYPE.name}</MenuItem>
+            {packages.map(pkg => (
+              <MenuItem key={pkg.id} value={pkg.id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>{pkg.name}</MenuItem>
+            ))}
           </Select>
         </FormControl>
+        {packages.length === 0 && (
+          <Alert severity="warning" sx={{ mt: 2 }}>No packages available. Please add a package.</Alert>
+        )}
         {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
         {successMessage && <Alert severity="success" sx={{ mt: 2 }}>{successMessage}</Alert>}
         <Button
@@ -701,7 +709,7 @@ export default function CoachAttendance() {
               boxShadow: '0 8px 24px 0 rgba(162,89,255,0.28)'
             }
           }}
-          disabled={!date || !selectedType}
+          disabled={!date || !selectedType || packages.length === 0}
           onClick={handleStartScanning}
         >
           Start QR Scanning
@@ -834,6 +842,14 @@ export default function CoachAttendance() {
               Stop Scanning
             </Button>
           </Box>
+          {/* Snackbar for QR scan success (now inside QR scanning section) */}
+          <Snackbar
+            open={!!successMessage}
+            autoHideDuration={3000}
+            onClose={() => setSuccessMessage("")}
+            message={successMessage}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          />
         </Paper>
       )}
 
@@ -850,10 +866,6 @@ export default function CoachAttendance() {
           boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
           color: '#fff',
         }}>
-          <Typography variant="h6" gutterBottom sx={{ color: '#fff', fontWeight: 700 }}>
-            Students - {ELITE_CLASS_TYPE.name} on {date}
-          </Typography>
-          
           {/* Search Bar */}
           <TextField
             fullWidth
@@ -1108,7 +1120,7 @@ export default function CoachAttendance() {
         fullWidth
       >
         <DialogTitle>
-          Manual Attendance - {ELITE_CLASS_TYPE.name} on {date}
+          Manual Attendance - {packages.length > 0 ? packages[0].name : 'Class'} on {date}
         </DialogTitle>
         <DialogContent>
           {loadingUnchecked ? (
