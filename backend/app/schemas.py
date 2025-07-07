@@ -50,23 +50,6 @@ class Package(PackageBase):
     class Config:
         from_attributes = True
 
-# Registration schemas
-class RegistrationBase(BaseModel):
-    user_id: int
-    package_id: int
-    start_date: date
-    end_date: date
-    status: str = "active"
-
-class RegistrationCreate(RegistrationBase):
-    pass
-
-class Registration(RegistrationBase):
-    id: int
-    
-    class Config:
-        from_attributes = True
-
 # Class schemas
 class ClassBase(BaseModel):
     date: date

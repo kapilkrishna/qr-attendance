@@ -9,7 +9,7 @@ from datetime import date, datetime
 import os
 from dotenv import load_dotenv
 
-from . import crud, models, schemas, seed_data
+from . import crud, models_simple as models, schemas, seed_data
 from .database import SessionLocal, engine
 
 load_dotenv()
@@ -53,134 +53,61 @@ def authenticate_coach(auth: schemas.CoachAuthRequest):
         )
 
 # User endpoints
-@app.post("/api/users", response_model=schemas.User)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    """Create a new user"""
-    db_user = crud.get_user_by_email(db, email=user.email)
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    return crud.create_user(db=db, user=user)
+@app.post("/api/users")
+def create_user(name: str, email: str, role: str = "student", db: Session = Depends(get_db)):
+    return crud.create_user(db, name, email, role)
 
-@app.get("/api/users", response_model=List[schemas.User])
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """Get all users"""
-    users = crud.get_users(db, skip=skip, limit=limit)
-    return users
+@app.get("/api/users")
+def list_users(db: Session = Depends(get_db)):
+    return crud.get_users(db)
+
+@app.get("/api/users/{user_id}")
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    user = crud.get_user(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
 # Package endpoints
-@app.get("/api/packages", response_model=List[schemas.Package])
-def read_packages(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """Get all packages"""
-    packages = crud.get_packages(db, skip=skip, limit=limit)
-    return packages
+@app.post("/api/packages")
+def create_package(name: str, description: str, price: float, start_date: date, end_date: date, class_days: str, db: Session = Depends(get_db)):
+    return crud.create_package(db, name, description, price, start_date, end_date, class_days)
 
-@app.post("/api/packages", response_model=schemas.Package)
-def create_package(package: schemas.PackageCreate, db: Session = Depends(get_db)):
-    """Create a new package"""
-    return crud.create_package(db=db, package=package)
+@app.get("/api/packages")
+def list_packages(db: Session = Depends(get_db)):
+    return crud.get_packages(db)
 
-@app.delete("/api/packages/{package_id}")
-def delete_package(package_id: int, db: Session = Depends(get_db)):
+@app.get("/api/packages/{package_id}")
+def get_package(package_id: int, db: Session = Depends(get_db)):
     package = crud.get_package(db, package_id)
     if not package:
         raise HTTPException(status_code=404, detail="Package not found")
-    db.delete(package)
-    db.commit()
-    return {"message": "Package deleted"}
-
-# Package Option endpoints
-@app.get("/api/packages/{package_id}/options", response_model=List[schemas.PackageOption])
-def get_package_options(package_id: int, db: Session = Depends(get_db)):
-    return crud.get_package_options(db, package_id)
-
-@app.post("/api/packages/{package_id}/options", response_model=schemas.PackageOption)
-def create_package_option(package_id: int, option: schemas.PackageOptionCreate, db: Session = Depends(get_db)):
-    return crud.create_package_option(db, package_id, option)
-
-@app.delete("/api/package_options/{option_id}")
-def delete_package_option(option_id: int, db: Session = Depends(get_db)):
-    deleted = crud.delete_package_option(db, option_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Option not found")
-    return {"message": "Option deleted"}
-
-# Registration endpoints
-@app.post("/api/register", response_model=schemas.Registration)
-def register_user(registration: schemas.RegistrationCreate, db: Session = Depends(get_db)):
-    """Register a user for a package"""
-    # Check if user exists
-    user = crud.get_user(db, registration.user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    # Check if package exists
-    package = crud.get_package(db, registration.package_id)
-    if not package:
-        raise HTTPException(status_code=404, detail="Package not found")
-    
-    # Create registration
-    db_registration = crud.create_registration(db=db, registration=registration)
-    
-    return db_registration
-
-@app.get("/api/registrations/user/{user_id}", response_model=List[schemas.Registration])
-def read_user_registrations(user_id: int, db: Session = Depends(get_db)):
-    """Get all registrations for a user"""
-    registrations = crud.get_user_registrations(db, user_id=user_id)
-    return registrations
+    return package
 
 # Class endpoints
-@app.get("/api/classes", response_model=List[schemas.Class])
-def read_classes(package_id: int = None, date: date = None, db: Session = Depends(get_db)):
-    """Get classes with optional filtering"""
-    if package_id and date:
-        classes = crud.get_classes_by_date_package(db, date=date, package_id=package_id)
-    elif package_id:
-        classes = crud.get_classes_by_package(db, package_id=package_id)
-    else:
-        # Get all classes (you might want to add pagination)
-        classes = db.query(models.Class).all()
-    return classes
+@app.post("/api/classes")
+def create_class(package_id: int, date: date, time: str, location: str, active: bool = True, db: Session = Depends(get_db)):
+    return crud.create_class(db, package_id, date, time, location, active)
 
-@app.post("/api/classes", response_model=schemas.Class)
-def create_class(class_data: schemas.ClassCreate, db: Session = Depends(get_db)):
-    """Create a new class"""
-    return crud.create_class(db=db, class_data=class_data)
+@app.get("/api/classes")
+def list_classes(db: Session = Depends(get_db)):
+    return crud.get_classes(db)
 
-@app.post("/api/cancel_class/{class_id}")
-def cancel_class_endpoint(class_id: int, db: Session = Depends(get_db)):
-    """Cancel a class"""
-    db_class = crud.cancel_class(db, class_id=class_id)
-    if not db_class:
+@app.get("/api/classes/{class_id}")
+def get_class(class_id: int, db: Session = Depends(get_db)):
+    class_obj = crud.get_class(db, class_id)
+    if not class_obj:
         raise HTTPException(status_code=404, detail="Class not found")
-    
-    # Get package info for email
-    package = crud.get_package(db, db_class.package_id)
-    
-    # Get all users registered for this package
-    registrations = crud.get_active_registrations(db, user_id=None)  # Get all active registrations
-    user_emails = []
-    for reg in registrations:
-        if reg.package_id == db_class.package_id:
-            user = crud.get_user(db, reg.user_id)
-            if user:
-                user_emails.append(user.email)
-    
-    # Send cancellation email
-    if user_emails:
-        # Send cancellation email
-        pass
-    
-    return {"message": "Class cancelled successfully"}
+    return class_obj
 
-@app.delete("/api/classes/{class_id}")
-def delete_class(class_id: int, db: Session = Depends(get_db)):
-    db_class = crud.get_class(db, class_id)
-    if not db_class:
-        raise HTTPException(status_code=404, detail="Class not found")
-    db.delete(db_class)
-    db.commit()
-    return {"message": "Class deleted"}
+# Attendance endpoints
+@app.get("/api/attendance/{class_id}")
+def get_attendance(class_id: int, db: Session = Depends(get_db)):
+    return crud.get_attendance(db, class_id)
+
+@app.post("/api/attendance/mark")
+def mark_attendance(class_id: int, user_id: int, status: str = "present", db: Session = Depends(get_db)):
+    return crud.mark_attendance(db, class_id, user_id, status)
 
 # QR Code endpoints
 @app.post("/api/generate_qr", response_model=schemas.QRGenerateResponse)
@@ -252,94 +179,6 @@ def generate_qr_code(request: schemas.QRGenerateRequest, db: Session = Depends(g
         print(f"[ERROR] Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"QR generation failed: {str(e)}")
 
-# Attendance endpoints
-@app.post("/api/attendance", response_model=schemas.AttendanceScanResponse)
-def mark_attendance_from_qr(request: schemas.AttendanceScanRequest, db: Session = Depends(get_db)):
-    """Mark attendance from scanned QR code"""
-    # Parse QR data (format: "user_id:user_name")
-    try:
-        user_id_str, user_name = request.qr_data.split(":", 1)
-        user_id = int(user_id_str)
-    except (ValueError, IndexError):
-        raise HTTPException(status_code=400, detail="Invalid QR code format")
-    
-    # Validate status
-    if request.status not in ["present", "late"]:
-        raise HTTPException(status_code=400, detail="Invalid status. Must be 'present' or 'late'")
-    
-    # Check if user exists
-    user = crud.get_user(db, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    # Mark attendance with validation using the provided status
-    attendance_record, message, is_registered, registration_message = crud.mark_attendance_with_validation(
-        db, request.class_id, user_id, status=request.status
-    )
-    
-    if not attendance_record:
-        return schemas.AttendanceScanResponse(
-            success=False,
-            message=message,
-            user_name=user.name
-        )
-    
-    return schemas.AttendanceScanResponse(
-        success=True,
-        message=message,
-        user_name=user.name,
-        already_present=message == "Already marked present",
-        is_registered=is_registered,
-        registration_message=registration_message
-    )
-
-@app.get("/api/attendance/class/{class_id}", response_model=List[schemas.Attendance])
-def get_class_attendance(class_id: int, db: Session = Depends(get_db)):
-    """Get attendance for a specific class"""
-    attendance = crud.get_class_attendance(db, class_id=class_id)
-    return attendance
-
-@app.get("/api/attendance/unchecked/{class_id}", response_model=List[schemas.User])
-def get_unchecked_students(class_id: int, db: Session = Depends(get_db)):
-    """Get all registered students who haven't checked in for a specific class"""
-    return crud.get_unchecked_students_for_class(db, class_id)
-
-@app.post("/api/attendance/manual/{class_id}/{user_id}")
-def manually_mark_attendance(class_id: int, user_id: int, db: Session = Depends(get_db)):
-    """Manually mark attendance for a specific student"""
-    attendance_record, message, is_registered, registration_message = crud.mark_attendance_with_validation(
-        db, class_id, user_id, status="present"
-    )
-    
-    if not attendance_record:
-        raise HTTPException(status_code=400, detail=message)
-    
-    return {
-        "success": True,
-        "message": message,
-        "user_name": crud.get_user(db, user_id).name,
-        "is_registered": is_registered,
-        "registration_message": registration_message
-    }
-
-@app.put("/api/attendance/{class_id}/{user_id}/status")
-def update_attendance_status_endpoint(class_id: int, user_id: int, status: str, db: Session = Depends(get_db)):
-    """Update attendance status for a specific student"""
-    if status not in ["present", "late", "missing"]:
-        raise HTTPException(status_code=400, detail="Invalid status. Must be 'present', 'late', or 'missing'")
-    
-    attendance_record = crud.update_attendance_status(db, class_id, user_id, status)
-    if not attendance_record:
-        raise HTTPException(status_code=404, detail="Attendance record not found")
-    
-    user = crud.get_user(db, user_id)
-    return {
-        "success": True,
-        "message": f"Attendance status updated to {status}",
-        "user_name": user.name,
-        "status": status
-    }
-
 @app.get("/api/attendance/comprehensive/{class_id}")
 def get_comprehensive_attendance(class_id: int, db: Session = Depends(get_db)):
     """Get comprehensive attendance data for a class"""
@@ -402,22 +241,6 @@ def update_payment(payment_id: int, amount_paid: float, payment_method: str = No
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
     return {"message": "Payment updated successfully"}
-
-# Class Type endpoints
-@app.get("/api/class_types", response_model=List[schemas.ClassType])
-def get_class_types(db: Session = Depends(get_db)):
-    return crud.get_class_types(db)
-
-@app.post("/api/class_types", response_model=schemas.ClassType)
-def create_class_type(class_type: schemas.ClassTypeCreate, db: Session = Depends(get_db)):
-    return crud.create_class_type(db, class_type)
-
-@app.delete("/api/class_types/{type_id}")
-def delete_class_type(type_id: int, db: Session = Depends(get_db)):
-    deleted = crud.delete_class_type(db, type_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Class type not found")
-    return {"message": "Class type deleted"}
 
 # Health check
 @app.get("/")

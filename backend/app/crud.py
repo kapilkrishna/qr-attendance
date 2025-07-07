@@ -3,38 +3,64 @@ from sqlalchemy import and_, func
 from datetime import date, datetime, timedelta
 import uuid
 from typing import List, Optional
-from . import models, schemas
+from . import models_simple as models
 
 # User CRUD operations
 def get_user(db: Session, user_id: int):
     return db.query(models.User).filter(models.User.id == user_id).first()
 
-def get_user_by_email(db: Session, email: str):
-    return db.query(models.User).filter(models.User.email == email).first()
+def get_users(db: Session):
+    return db.query(models.User).all()
 
-def get_users(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.User).offset(skip).limit(limit).all()
-
-def create_user(db: Session, user: schemas.UserCreate):
-    db_user = models.User(**user.dict())
-    db.add(db_user)
+def create_user(db: Session, name: str, email: str, role: str = "student"):
+    user = models.User(name=name, email=email, role=role)
+    db.add(user)
     db.commit()
-    db.refresh(db_user)
-    return db_user
+    db.refresh(user)
+    return user
 
 # Package CRUD operations
 def get_package(db: Session, package_id: int):
     return db.query(models.Package).filter(models.Package.id == package_id).first()
 
-def get_packages(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Package).offset(skip).limit(limit).all()
+def get_packages(db: Session):
+    return db.query(models.Package).all()
 
-def create_package(db: Session, package: schemas.PackageCreate):
-    db_package = models.Package(**package.dict())
-    db.add(db_package)
+def create_package(db: Session, name: str, description: str, price: float, start_date, end_date, class_days: str):
+    package = models.Package(name=name, description=description, price=price, start_date=start_date, end_date=end_date, class_days=class_days)
+    db.add(package)
     db.commit()
-    db.refresh(db_package)
-    return db_package
+    db.refresh(package)
+    return package
+
+# Class CRUD operations
+def get_class(db: Session, class_id: int):
+    return db.query(models.Class).filter(models.Class.id == class_id).first()
+
+def get_classes(db: Session):
+    return db.query(models.Class).all()
+
+def create_class(db: Session, package_id: int, date, time: str, location: str, active: bool = True):
+    class_obj = models.Class(package_id=package_id, date=date, time=time, location=location, active=active)
+    db.add(class_obj)
+    db.commit()
+    db.refresh(class_obj)
+    return class_obj
+
+# Attendance CRUD operations
+def get_attendance(db: Session, class_id: int):
+    return db.query(models.Attendance).filter(models.Attendance.class_id == class_id).all()
+
+def mark_attendance(db: Session, class_id: int, user_id: int, status: str = "present"):
+    attendance = db.query(models.Attendance).filter(models.Attendance.class_id == class_id, models.Attendance.user_id == user_id).first()
+    if attendance:
+        attendance.status = status
+    else:
+        attendance = models.Attendance(class_id=class_id, user_id=user_id, status=status)
+        db.add(attendance)
+    db.commit()
+    db.refresh(attendance)
+    return attendance
 
 # Registration CRUD operations
 def get_registration(db: Session, registration_id: int):
@@ -100,9 +126,6 @@ def create_registration(db: Session, registration: schemas.RegistrationCreate):
     return db_registration
 
 # Class CRUD operations
-def get_class(db: Session, class_id: int):
-    return db.query(models.Class).filter(models.Class.id == class_id).first()
-
 def get_classes_by_date_package(db: Session, date: date, package_id: int):
     return db.query(models.Class).filter(
         and_(
@@ -119,13 +142,6 @@ def get_classes_by_package(db: Session, package_id: int, start_date: date = None
         query = query.filter(models.Class.date <= end_date)
     return query.all()
 
-def create_class(db: Session, class_data: schemas.ClassCreate):
-    db_class = models.Class(**class_data.dict())
-    db.add(db_class)
-    db.commit()
-    db.refresh(db_class)
-    return db_class
-
 def cancel_class(db: Session, class_id: int):
     db_class = get_class(db, class_id)
     if db_class:
@@ -135,9 +151,6 @@ def cancel_class(db: Session, class_id: int):
     return db_class
 
 # Attendance CRUD operations
-def get_attendance(db: Session, attendance_id: int):
-    return db.query(models.Attendance).filter(models.Attendance.id == attendance_id).first()
-
 def get_class_attendance(db: Session, class_id: int):
     return db.query(models.Attendance).filter(models.Attendance.class_id == class_id).all()
 
