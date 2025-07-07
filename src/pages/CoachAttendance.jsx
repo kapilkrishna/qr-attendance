@@ -103,6 +103,14 @@ export default function CoachAttendance() {
     }
   }, [date, selectedType]);
 
+  // Reset scanned names when date or class type changes
+  useEffect(() => {
+    if (date || selectedType) {
+      console.log('Resetting scanned names due to date/type change:', { date, selectedType });
+      scannedNamesRef.current.clear();
+    }
+  }, [date, selectedType]);
+
   const fetchPackages = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/packages`);
@@ -188,6 +196,9 @@ export default function CoachAttendance() {
       scannerRef.current = null;
     }
     setIsScanning(false);
+    // Clear scanned names when stopping scanner
+    console.log('Clearing scanned names - stopping scanner');
+    scannedNamesRef.current.clear();
   };
 
   const startScanner = async () => {
@@ -195,6 +206,10 @@ export default function CoachAttendance() {
       setError('Please select a class first');
       return;
     }
+
+    // Clear scanned names when starting scanner
+    console.log('Clearing scanned names - starting scanner');
+    scannedNamesRef.current.clear();
 
     try {
       const scanner = new Html5Qrcode("reader");
