@@ -594,25 +594,6 @@ export default function CoachAttendance() {
           '& .MuiInputLabel-root': { color: '#bdbdbd' },
           '& .MuiSelect-icon': { color: '#fff' },
         }}>
-          <TextField
-            label="Date"
-            type="date"
-            value={new Date().toISOString().split('T')[0]}
-            onChange={e => {
-              // Handle date change
-            }}
-            fullWidth
-            InputLabelProps={{ shrink: true, sx: { color: '#bdbdbd' } }}
-            InputProps={{
-              sx: {
-                borderRadius: '12px',
-                background: 'rgba(44, 62, 100, 0.85)',
-                color: '#fff',
-                input: { color: '#fff' },
-                '& .MuiInputBase-input::placeholder': { color: '#bdbdbd', opacity: 1 }
-              }
-            }}
-          />
         </FormControl>
         <FormControl fullWidth margin="normal" sx={{
           '& .MuiInputBase-root': {
@@ -1055,29 +1036,6 @@ export default function CoachAttendance() {
                             onClick={() => { updateStudentStatus(student.id, 'missing'); setMenuOpenId(null); }}
                           >
                             ABSENT
-                          </Button>
-                        )}
-                        {student.status !== 'unchecked' && (
-                          <Button
-                            type="button"
-                            variant='outlined'
-                            size='medium'
-                            sx={{
-                              borderColor: '#a259ff',
-                              color: '#a259ff',
-                              fontWeight: 'bold',
-                              borderRadius: '8px',
-                              minWidth: { xs: 0, sm: 90 },
-                              px: { xs: 1, sm: 3 },
-                              width: { xs: '100%', sm: 'auto' },
-                              height: 40,
-                              display: 'flex',
-                              alignItems: 'center',
-                              '&:hover': { bgcolor: 'rgba(162, 89, 255, 0.1)', color: '#a259ff', borderColor: '#a259ff' }
-                            }}
-                            onClick={() => { uncheckStudentAttendance(student.id); setMenuOpenId(null); }}
-                          >
-                            UNMARKED
                           </Button>
                         )}
                       </Box>
