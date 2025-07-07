@@ -22,12 +22,11 @@ import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
-const ELITE_PACKAGE = { id: 4, name: 'Elite' };
-
 export default function CoachCancelClass() {
   const navigate = useNavigate();
   const [classes, setClasses] = useState([]);
-  const [selectedPackage, setSelectedPackage] = useState(ELITE_PACKAGE.id);
+  const [packages, setPackages] = useState([]);
+  const [selectedPackage, setSelectedPackage] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedClass, setSelectedClass] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,7 +40,24 @@ export default function CoachCancelClass() {
       navigate('/coach');
       return;
     }
+    
+    fetchPackages();
   }, [navigate]);
+
+  const fetchPackages = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/packages`);
+      if (!response.ok) throw new Error('Failed to fetch packages');
+      const data = await response.json();
+      setPackages(data);
+      if (data.length > 0) {
+        setSelectedPackage(data[0].id);
+      }
+    } catch (err) {
+      setError('Failed to load packages');
+      console.error('Error fetching packages:', err);
+    }
+  };
 
   useEffect(() => {
     if (selectedPackage && selectedDate) {
@@ -157,7 +173,9 @@ export default function CoachCancelClass() {
                   label="Package"
                   sx={{ color: '#fff' }}
                 >
-                  <MenuItem key={ELITE_PACKAGE.id} value={ELITE_PACKAGE.id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>{ELITE_PACKAGE.name}</MenuItem>
+                  {packages.map((pkg) => (
+                    <MenuItem key={pkg.id} value={pkg.id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>{pkg.name}</MenuItem>
+                  ))}
                 </Select>
               </FormControl>
               <TextField

@@ -1,0 +1,675 @@
+{
+  "class_types": [
+    {
+      "name": "WRCA Beginner"
+    },
+    {
+      "name": "WRCA Advanced"
+    },
+    {
+      "name": "Elite"
+    }
+  ],
+  "packages": [
+    {
+      "name": "WCRA Adult Beginner/Intermediate",
+      "description": "Beginner/Intermediate goes from 7 - 8 pm",
+      "price": 25.0,
+      "duration_type": "class",
+      "num_classes": 1,
+      "num_weeks": null,
+      "class_type_id": 1
+    },
+    {
+      "name": "WCRA Adult Advanced",
+      "description": "Advanced goes from 8 - 9:30 PM",
+      "price": 25.0,
+      "duration_type": "class",
+      "num_classes": 1,
+      "num_weeks": null,
+      "class_type_id": 2
+    },
+    {
+      "name": "Elite",
+      "description": "Elite Summer Camp: June 16 - August 15, 1-5 PM, Holmes Middle School",
+      "price": 0.0,
+      "duration_type": "week",
+      "num_classes": null,
+      "num_weeks": 9,
+      "class_type_id": 3
+    }
+  ],
+  "users": [
+    {
+      "name": "Kapil Krishna",
+      "email": "kapilk@andrew.cmu.edu",
+      "role": "student"
+    },
+    {
+      "name": "Mitchell",
+      "email": "m@gmail.com",
+      "role": "student"
+    },
+    {
+      "name": "Pavan Vinja",
+      "email": "pv@gmail.com",
+      "role": "student"
+    },
+    {
+      "name": "Shravan Senthil",
+      "email": "s@gmail.com",
+      "role": "student"
+    },
+    {
+      "name": "Bob",
+      "email": "bob@manual.entry",
+      "role": "student"
+    },
+    {
+      "name": "Thomas",
+      "email": "thomas@manual.entry",
+      "role": "student"
+    },
+    {
+      "name": "Tommy",
+      "email": "tommy@manual.entry",
+      "role": "student"
+    },
+    {
+      "name": "Ben",
+      "email": "ben@tennisacademy.com",
+      "role": "student"
+    },
+    {
+      "name": "Hank",
+      "email": "hank@tennisacademy.com",
+      "role": "student"
+    },
+    {
+      "name": "Robert K",
+      "email": "robert.k@tennisacademy.com",
+      "role": "student"
+    },
+    {
+      "name": "John",
+      "email": "john@tennisacademy.com",
+      "role": "student"
+    },
+    {
+      "name": "Kapil Krishna",
+      "email": "kapil.krishna@tennisacademy.com",
+      "role": "student"
+    },
+    {
+      "name": "Siddharth B",
+      "email": "siddharth.b@tennisacademy.com",
+      "role": "student"
+    },
+    {
+      "name": "Brad P",
+      "email": "brad.p@tennisacademy.com",
+      "role": "student"
+    }
+  ],
+  "registrations": [
+    {
+      "user_id": 1,
+      "package_id": 1,
+      "start_date": "2024-07-02",
+      "end_date": "2024-07-02",
+      "status": "active"
+    },
+    {
+      "user_id": 1,
+      "package_id": 1,
+      "start_date": "2024-07-09",
+      "end_date": "2024-07-09",
+      "status": "active"
+    },
+    {
+      "user_id": 1,
+      "package_id": 1,
+      "start_date": "2024-07-01",
+      "end_date": "2024-07-01",
+      "status": "active"
+    },
+    {
+      "user_id": 2,
+      "package_id": 1,
+      "start_date": "2024-07-01",
+      "end_date": "2024-07-01",
+      "status": "active"
+    },
+    {
+      "user_id": 1,
+      "package_id": 1,
+      "start_date": "2025-07-01",
+      "end_date": "2025-07-01",
+      "status": "active"
+    },
+    {
+      "user_id": 3,
+      "package_id": 2,
+      "start_date": "2025-07-01",
+      "end_date": "2025-07-01",
+      "status": "active"
+    },
+    {
+      "user_id": 4,
+      "package_id": 3,
+      "start_date": "2025-07-01",
+      "end_date": "2025-07-01",
+      "status": "active"
+    },
+    {
+      "user_id": 8,
+      "package_id": 4,
+      "start_date": "2025-07-07",
+      "end_date": "2025-07-07",
+      "status": "active"
+    },
+    {
+      "user_id": 9,
+      "package_id": 4,
+      "start_date": "2025-07-07",
+      "end_date": "2025-07-07",
+      "status": "active"
+    },
+    {
+      "user_id": 10,
+      "package_id": 4,
+      "start_date": "2025-07-08",
+      "end_date": "2025-07-08",
+      "status": "active"
+    },
+    {
+      "user_id": 11,
+      "package_id": 4,
+      "start_date": "2025-07-07",
+      "end_date": "2025-07-07",
+      "status": "active"
+    },
+    {
+      "user_id": 12,
+      "package_id": 4,
+      "start_date": "2025-07-07",
+      "end_date": "2025-07-07",
+      "status": "active"
+    },
+    {
+      "user_id": 1,
+      "package_id": 4,
+      "start_date": "2025-07-07",
+      "end_date": "2025-07-07",
+      "status": "active"
+    },
+    {
+      "user_id": 13,
+      "package_id": 4,
+      "start_date": "2025-07-07",
+      "end_date": "2025-07-07",
+      "status": "active"
+    },
+    {
+      "user_id": 14,
+      "package_id": 4,
+      "start_date": "2025-07-08",
+      "end_date": "2025-07-08",
+      "status": "active"
+    }
+  ],
+  "classes": [
+    {
+      "date": "2025-06-25",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-25",
+      "package_id": null,
+      "class_type_id": 3,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-25",
+      "package_id": null,
+      "class_type_id": 2,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-24",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-24",
+      "package_id": null,
+      "class_type_id": 3,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-01",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-07-28",
+      "package_id": null,
+      "class_type_id": 2,
+      "cancelled": false
+    },
+    {
+      "date": "2025-07-28",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-07-29",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-26",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-27",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-28",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-28",
+      "package_id": null,
+      "class_type_id": 2,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-24",
+      "package_id": null,
+      "class_type_id": 2,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-30",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-07-01",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-07-01",
+      "package_id": null,
+      "class_type_id": 2,
+      "cancelled": false
+    },
+    {
+      "date": "2025-07-02",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-07-07",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-26",
+      "package_id": null,
+      "class_type_id": 2,
+      "cancelled": false
+    },
+    {
+      "date": "2025-07-15",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-17",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-30",
+      "package_id": null,
+      "class_type_id": 3,
+      "cancelled": false
+    },
+    {
+      "date": "2025-07-16",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-26",
+      "package_id": null,
+      "class_type_id": 3,
+      "cancelled": false
+    },
+    {
+      "date": "2025-08-21",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-07-09",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-27",
+      "package_id": null,
+      "class_type_id": 2,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-29",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-08-30",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-08-27",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-08-20",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-08-06",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-08-12",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-08-16",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-08-02",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-23",
+      "package_id": null,
+      "class_type_id": 1,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-23",
+      "package_id": null,
+      "class_type_id": 4,
+      "cancelled": false
+    },
+    {
+      "date": "2025-06-23",
+      "package_id": null,
+      "class_type_id": 2,
+      "cancelled": false
+    },
+    {
+      "date": "2025-07-02",
+      "package_id": null,
+      "class_type_id": 3,
+      "cancelled": false
+    },
+    {
+      "date": "2025-07-02",
+      "package_id": null,
+      "class_type_id": 4,
+      "cancelled": false
+    },
+    {
+      "date": "2025-07-07",
+      "package_id": null,
+      "class_type_id": 2,
+      "cancelled": false
+    },
+    {
+      "date": "2025-07-07",
+      "package_id": null,
+      "class_type_id": 3,
+      "cancelled": false
+    },
+    {
+      "date": "2025-07-11",
+      "package_id": null,
+      "class_type_id": 3,
+      "cancelled": false
+    },
+    {
+      "date": "2025-07-08",
+      "package_id": null,
+      "class_type_id": 3,
+      "cancelled": false
+    },
+    {
+      "date": "2025-07-05",
+      "package_id": null,
+      "class_type_id": 3,
+      "cancelled": false
+    },
+    {
+      "date": "2025-07-06",
+      "package_id": null,
+      "class_type_id": 3,
+      "cancelled": false
+    }
+  ],
+  "attendance": [
+    {
+      "class_id": 29,
+      "user_id": 1,
+      "status": "late",
+      "checked_in_at": "2025-06-29T23:11:28.861134"
+    },
+    {
+      "class_id": 29,
+      "user_id": 2,
+      "status": "missing",
+      "checked_in_at": "2025-06-29T23:11:27.588174"
+    },
+    {
+      "class_id": 16,
+      "user_id": 4,
+      "status": "present",
+      "checked_in_at": "2025-07-01T23:35:21"
+    },
+    {
+      "class_id": 45,
+      "user_id": 10,
+      "status": "present",
+      "checked_in_at": "2025-07-05T21:26:04"
+    },
+    {
+      "class_id": 43,
+      "user_id": 8,
+      "status": "present",
+      "checked_in_at": "2025-07-05T22:01:13"
+    },
+    {
+      "class_id": 43,
+      "user_id": 12,
+      "status": "late",
+      "checked_in_at": "2025-07-06T23:03:13"
+    },
+    {
+      "class_id": 43,
+      "user_id": 9,
+      "status": "missing",
+      "checked_in_at": "2025-07-06T23:03:13"
+    },
+    {
+      "class_id": 43,
+      "user_id": 1,
+      "status": "present",
+      "checked_in_at": "2025-07-06T23:03:14"
+    }
+  ],
+  "payments": [
+    {
+      "user_id": 1,
+      "month": "2025-06",
+      "invoice_code": "INV-20250630-4994F617",
+      "amount_due": 18000.0,
+      "amount_paid": 0.0,
+      "paid": false,
+      "payment_method": null,
+      "payment_date": null
+    },
+    {
+      "user_id": 2,
+      "month": "2025-06",
+      "invoice_code": "INV-20250630-BDD63E39",
+      "amount_due": 18000.0,
+      "amount_paid": 0.0,
+      "paid": false,
+      "payment_method": null,
+      "payment_date": null
+    }
+  ],
+  "package_options": [
+    {
+      "package_id": 2,
+      "label": "July 1",
+      "start_date": "2025-07-01",
+      "end_date": "2025-07-01"
+    },
+    {
+      "package_id": 2,
+      "label": "July 2",
+      "start_date": "2025-07-02",
+      "end_date": "2025-07-02"
+    },
+    {
+      "package_id": 2,
+      "label": "July 9",
+      "start_date": "2025-07-09",
+      "end_date": "2025-07-09"
+    },
+    {
+      "package_id": 2,
+      "label": "July 16",
+      "start_date": "2025-07-16",
+      "end_date": "2025-07-16"
+    },
+    {
+      "package_id": 2,
+      "label": "July 23",
+      "start_date": "2025-07-23",
+      "end_date": "2025-07-23"
+    },
+    {
+      "package_id": 2,
+      "label": "July 30",
+      "start_date": "2025-07-30",
+      "end_date": "2025-07-30"
+    },
+    {
+      "package_id": 2,
+      "label": "August 6",
+      "start_date": "2025-08-06",
+      "end_date": "2025-08-06"
+    },
+    {
+      "package_id": 2,
+      "label": "August 13",
+      "start_date": "2025-08-13",
+      "end_date": "2025-08-13"
+    },
+    {
+      "package_id": 3,
+      "label": "July 1",
+      "start_date": "2025-07-01",
+      "end_date": "2025-07-01"
+    },
+    {
+      "package_id": 3,
+      "label": "July 2",
+      "start_date": "2025-07-02",
+      "end_date": "2025-07-02"
+    },
+    {
+      "package_id": 3,
+      "label": "July 9",
+      "start_date": "2025-07-09",
+      "end_date": "2025-07-09"
+    },
+    {
+      "package_id": 3,
+      "label": "July 16",
+      "start_date": "2025-07-16",
+      "end_date": "2025-07-16"
+    },
+    {
+      "package_id": 3,
+      "label": "July 23",
+      "start_date": "2025-07-23",
+      "end_date": "2025-07-23"
+    },
+    {
+      "package_id": 3,
+      "label": "July 30",
+      "start_date": "2025-07-30",
+      "end_date": "2025-07-30"
+    },
+    {
+      "package_id": 3,
+      "label": "August 6",
+      "start_date": "2025-08-06",
+      "end_date": "2025-08-06"
+    },
+    {
+      "package_id": 3,
+      "label": "August 13",
+      "start_date": "2025-08-13",
+      "end_date": "2025-08-13"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -16,30 +16,44 @@ import {
   Select,
   InputLabel,
   FormControl,
-  Alert
+  Alert,
+  CircularProgress
 } from '@mui/material';
 
-const ELITE_DAYS = [
-  { value: '2025-07-07', label: 'Monday, July 7' },
-  { value: '2025-07-08', label: 'Tuesday, July 8' },
-  { value: '2025-07-09', label: 'Wednesday, July 9' },
-  { value: '2025-07-10', label: 'Thursday, July 10' },
-  { value: '2025-07-11', label: 'Friday, July 11' },
-];
-
-const ELITE_PACKAGE_ID = 4; // Update this if the ID changes in the backend
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 export default function Packages() {
+  const [packages, setPackages] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState(null);
   const [name, setName] = useState('');
   const [selectedDay, setSelectedDay] = useState('');
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleOpenDialog = () => {
+  useEffect(() => {
+    fetchPackages();
+  }, []);
+
+  const fetchPackages = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/packages`);
+      if (!response.ok) throw new Error('Failed to fetch packages');
+      const data = await response.json();
+      setPackages(data);
+    } catch (err) {
+      setError('Failed to load packages');
+      console.error('Error fetching packages:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenDialog = (pkg) => {
     setDialogOpen(true);
+    setSelectedPackage(pkg);
     setName('');
     setSelectedDay('');
     setSuccess('');
@@ -48,12 +62,13 @@ export default function Packages() {
 
   const handleCloseDialog = () => {
     setDialogOpen(false);
+    setSelectedPackage(null);
     setSuccess('');
     setError('');
   };
 
   const handleSubmit = async () => {
-    if (!name.trim() || !selectedDay) {
+    if (!name.trim() || !selectedDay || !selectedPackage) {
       setError('Please enter your name and select a day.');
       return;
     }
@@ -82,13 +97,13 @@ export default function Packages() {
         setError('Could not create or find user.');
         return;
       }
-      // 2. Register user for Elite package
+      // 2. Register user for selected package
       let regRes = await fetch(`${API_BASE_URL}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: userId,
-          package_id: ELITE_PACKAGE_ID,
+          package_id: selectedPackage.id,
           start_date: selectedDay,
           end_date: selectedDay,
           status: 'active'
@@ -96,7 +111,7 @@ export default function Packages() {
       });
       if (!regRes.ok) {
         const regErr = await regRes.json();
-        setError(regErr.detail || 'Failed to register for Elite package.');
+        setError(regErr.detail || 'Failed to register for package.');
         return;
       }
       setDialogOpen(false);
@@ -106,65 +121,83 @@ export default function Packages() {
     }
   };
 
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (packages.length === 0) {
+    return (
+      <Box sx={{ textAlign: 'center', mt: 4 }}>
+        <Alert severity="info" sx={{ maxWidth: 500, mx: 'auto' }}>
+          No packages are currently available. Please check back later.
+        </Alert>
+      </Box>
+    );
+  }
+
   return (
     <Box>
       <Grid container spacing={4} alignItems="flex-start" sx={{ mt: 2, mb: 4, maxWidth: '900px', mx: 'auto' }}>
-        <Grid item xs={12} sm={8} md={6} display="flex" justifyContent="center">
-          <Card
-            sx={{
-              width: { xs: '90vw', sm: 380, md: 420 },
-              minWidth: { xs: '90vw', sm: 380, md: 420 },
-              maxWidth: { xs: '90vw', sm: 500, md: 500 },
-              minHeight: { xs: 320, md: 400 },
-              height: { xs: 'auto', md: 400 },
-              display: 'flex',
-              flexDirection: 'column',
-              background: 'rgba(30, 44, 80, 0.92)',
-              borderRadius: '22px',
-              boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
-              color: '#fff',
-              p: 3,
-              transition: 'transform 0.2s, box-shadow 0.2s',
-              '&:hover': {
-                transform: 'translateY(-6px) scale(1.03)',
-                boxShadow: '0 16px 40px 0 rgba(31, 38, 135, 0.35)'
-              }
-            }}
-          >
-            <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 0 }}>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#fff', fontSize: '1.8rem' }}>
-                Elite Summer 2025
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 2, flexGrow: 1, color: '#e0e0e0', fontWeight: 500, lineHeight: 1.6, fontSize: '1.2rem' }}>
-                1 - 5 PM <br />
-                Holmes Middle School<br />
-                6525 Montrose Street, Alexandria, Virginia
-              </Typography>
-              <Button
-                variant="contained"
-                fullWidth
-                sx={{
-                  mt: 'auto',
-                  background: 'linear-gradient(90deg, #a259ff 0%, #3a8dde 100%)',
-                  color: '#fff',
-                  fontWeight: 700,
-                  fontSize: '1.1rem',
-                  borderRadius: '12px',
-                  py: 1.2,
-                  boxShadow: '0 4px 16px 0 rgba(162,89,255,0.18)',
-                  textTransform: 'none',
-                  '&:hover': {
-                    background: 'linear-gradient(90deg, #3a8dde 0%, #a259ff 100%)',
-                    boxShadow: '0 8px 24px 0 rgba(162,89,255,0.28)'
-                  }
-                }}
-                onClick={handleOpenDialog}
-              >
-                Select Day
-              </Button>
-            </CardContent>
-          </Card>
-        </Grid>
+        {packages.map((pkg) => (
+          <Grid item xs={12} sm={8} md={6} key={pkg.id} display="flex" justifyContent="center">
+            <Card
+              sx={{
+                width: { xs: '90vw', sm: 380, md: 420 },
+                minWidth: { xs: '90vw', sm: 380, md: 420 },
+                maxWidth: { xs: '90vw', sm: 500, md: 500 },
+                minHeight: { xs: 320, md: 400 },
+                height: { xs: 'auto', md: 400 },
+                display: 'flex',
+                flexDirection: 'column',
+                background: 'rgba(30, 44, 80, 0.92)',
+                borderRadius: '22px',
+                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.25)',
+                color: '#fff',
+                p: 3,
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-6px) scale(1.03)',
+                  boxShadow: '0 16px 40px 0 rgba(31, 38, 135, 0.35)'
+                }
+              }}
+            >
+              <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 0 }}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#fff', fontSize: '1.8rem' }}>
+                  {pkg.name}
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 2, flexGrow: 1, color: '#e0e0e0', fontWeight: 500, lineHeight: 1.6, fontSize: '1.2rem' }}>
+                  {pkg.description}
+                </Typography>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  sx={{
+                    mt: 'auto',
+                    background: 'linear-gradient(90deg, #a259ff 0%, #3a8dde 100%)',
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: '1.1rem',
+                    borderRadius: '12px',
+                    py: 1.2,
+                    boxShadow: '0 4px 16px 0 rgba(162,89,255,0.18)',
+                    textTransform: 'none',
+                    '&:hover': {
+                      background: 'linear-gradient(90deg, #3a8dde 0%, #a259ff 100%)',
+                      boxShadow: '0 8px 24px 0 rgba(162,89,255,0.28)'
+                    }
+                  }}
+                  onClick={() => handleOpenDialog(pkg)}
+                >
+                  Select Day
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
       </Grid>
 
       <Dialog open={dialogOpen} onClose={handleCloseDialog} PaperProps={{
@@ -175,7 +208,9 @@ export default function Packages() {
           color: '#fff',
         }
       }}>
-        <DialogTitle sx={{ color: '#fff', fontWeight: 700, fontSize: '1.5rem' }}>Select Day</DialogTitle>
+        <DialogTitle sx={{ color: '#fff', fontWeight: 700, fontSize: '1.5rem' }}>
+          Select Day - {selectedPackage?.name}
+        </DialogTitle>
         <DialogContent>
           <TextField
             label="Full Name *"
@@ -234,9 +269,11 @@ export default function Packages() {
                 },
               }}
             >
-              {ELITE_DAYS.map(day => (
-                <MenuItem key={day.value} value={day.value} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>{day.label}</MenuItem>
-              ))}
+              {selectedPackage?.options?.map(option => (
+                <MenuItem key={option.id} value={option.start_date} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>
+                  {option.label}
+                </MenuItem>
+              )) || []}
             </Select>
           </FormControl>
           {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
