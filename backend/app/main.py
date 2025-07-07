@@ -123,7 +123,17 @@ def get_attendance(class_id: int, db: Session = Depends(get_db)):
     return crud.get_attendance(db, class_id)
 
 @app.post("/api/attendance/mark")
-def mark_attendance(class_id: int, user_id: int, status: str = "present", db: Session = Depends(get_db)):
+def mark_attendance(request: dict, db: Session = Depends(get_db)):
+    class_id = request.get("class_id")
+    user_id = request.get("user_id")
+    status = request.get("status", "present")
+    
+    if not class_id or not user_id:
+        raise HTTPException(status_code=400, detail="class_id and user_id are required")
+    
+    if status not in ["present", "late", "missing"]:
+        raise HTTPException(status_code=400, detail="Invalid status. Must be 'present', 'late', or 'missing'")
+    
     return crud.mark_attendance(db, class_id, user_id, status)
 
 @app.get("/api/attendance/comprehensive/{class_id}")
@@ -131,6 +141,12 @@ def get_comprehensive_attendance(class_id: int, db: Session = Depends(get_db)):
     """Get comprehensive attendance data for a class"""
     attendance_data = crud.get_comprehensive_attendance_for_class(db, class_id)
     return attendance_data
+
+@app.get("/api/attendance/unchecked/{class_id}")
+def get_unchecked_students(class_id: int, db: Session = Depends(get_db)):
+    """Get students who haven't been marked for attendance yet"""
+    unchecked_students = crud.get_unchecked_students_for_class(db, class_id)
+    return unchecked_students
 
 @app.post("/api/attendance/add_user/{class_id}")
 def add_user_to_attendance(class_id: int, request: dict, db: Session = Depends(get_db)):

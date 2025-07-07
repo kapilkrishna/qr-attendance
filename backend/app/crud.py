@@ -194,7 +194,7 @@ def get_comprehensive_attendance_for_class(db: Session, class_id: int):
         if user.role == "student":  # Only include students
             attendance_record = attendance_dict.get(user.id)
             comprehensive_attendance.append({
-                "user_id": user.id,
+                "id": user.id,
                 "name": user.name,
                 "email": user.email,
                 "status": attendance_record.status if attendance_record else "missing",
@@ -213,4 +213,25 @@ def create_user_for_attendance(db: Session, name: str, email: str = None):
             return existing_user
     
     # Create new user
-    return create_user(db, name=name, email=email or f"{name.lower().replace(' ', '.')}@example.com", role="student") 
+    return create_user(db, name=name, email=email or f"{name.lower().replace(' ', '.')}@example.com", role="student")
+
+def get_unchecked_students_for_class(db: Session, class_id: int):
+    """Get students who haven't been marked for attendance yet"""
+    # Get all students
+    all_students = db.query(models.User).filter(models.User.role == "student").all()
+    
+    # Get existing attendance records for this class
+    existing_attendance = get_class_attendance(db, class_id)
+    marked_user_ids = {att.user_id for att in existing_attendance}
+    
+    # Return students who haven't been marked
+    unchecked_students = []
+    for student in all_students:
+        if student.id not in marked_user_ids:
+            unchecked_students.append({
+                "id": student.id,
+                "name": student.name,
+                "email": student.email
+            })
+    
+    return unchecked_students 

@@ -41,8 +41,7 @@ export default function CoachAttendance() {
   const [packages, setPackages] = useState([]);
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
-  const [date, setDate] = useState('');
-  const [selectedType, setSelectedType] = useState('');
+  const [selectedPackage, setSelectedPackage] = useState('');
   
   const scannerRef = useRef(null);
   const isScanningRef = useRef(false);
@@ -78,6 +77,16 @@ export default function CoachAttendance() {
   // New state for success message
   const [successMessage, setSuccessMessage] = useState('');
 
+  // Clear success message after 3 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
   useEffect(() => {
     // Check authentication
     if (!localStorage.getItem('coachAuthenticated')) {
@@ -88,22 +97,20 @@ export default function CoachAttendance() {
     fetchPackages();
   }, [navigate]);
 
-
-
-  // Auto-load students when date and class type are selected
+  // Auto-load students when package is selected
   useEffect(() => {
-    if (date && selectedType) {
-      fetchAllStudentsForClass();
+    if (selectedPackage) {
+      fetchClassesForPackage();
     }
-  }, [date, selectedType]);
+  }, [selectedPackage]);
 
-  // Reset scanned names when date or class type changes
+  // Reset scanned names when package changes
   useEffect(() => {
-    if (date || selectedType) {
-      console.log('Resetting scanned names due to date/type change:', { date, selectedType });
+    if (selectedPackage) {
+      console.log('Resetting scanned names due to package change:', { selectedPackage });
       scannedNamesRef.current.clear();
     }
-  }, [date, selectedType]);
+  }, [selectedPackage]);
 
   const fetchPackages = async () => {
     try {
@@ -112,9 +119,9 @@ export default function CoachAttendance() {
       const data = await response.json();
       setPackages(data);
       if (data.length > 0) {
-        setSelectedType(data[0].class_type_id);
+        setSelectedPackage(data[0].id);
       } else {
-        setSelectedType('');
+        setSelectedPackage('');
       }
     } catch (err) {
       setError('Failed to load packages');
@@ -122,40 +129,42 @@ export default function CoachAttendance() {
     }
   };
 
+  const fetchClassesForPackage = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/classes`);
+      if (!response.ok) throw new Error('Failed to fetch classes');
+      const allClasses = await response.json();
+      
+      // Filter classes for the selected package
+      const packageClasses = allClasses.filter(cls => cls.package_id === selectedPackage);
+      setClasses(packageClasses);
+      
+      if (packageClasses.length > 0) {
+        setSelectedClass(packageClasses[0].id);
+        fetchAllStudentsForClass(packageClasses[0].id);
+      }
+    } catch (err) {
+      setError('Failed to load classes');
+      console.error('Error fetching classes:', err);
+    }
+  };
 
-
-  // New function to fetch all students for a class type and date
-  const fetchAllStudentsForClass = async () => {
+  // New function to fetch all students for a class
+  const fetchAllStudentsForClass = async (classId = selectedClass) => {
+    if (!classId) return;
+    
     setLoadingStudents(true);
     try {
-      // First get or create the class
-      const classResponse = await fetch(`${API_BASE_URL}/classes/by_type`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date, class_type_id: selectedType })
-      });
-      
-      if (!classResponse.ok) throw new Error('Failed to get or create class');
-      const classObj = await classResponse.json();
-      setSelectedClass(classObj.id);
-
-      // Then get comprehensive attendance data
-      const attendanceResponse = await fetch(`${API_BASE_URL}/attendance/comprehensive/${classObj.id}`);
+      // Get comprehensive attendance data
+      const attendanceResponse = await fetch(`${API_BASE_URL}/attendance/comprehensive/${classId}`);
       if (!attendanceResponse.ok) throw new Error('Failed to fetch attendance data');
       const attendanceData = await attendanceResponse.json();
 
-      // Combine all students and sort them (unchecked first, then checked in)
-      const allStudentsData = [
-        ...attendanceData.unchecked.map(student => ({ ...student, status: 'unchecked' })),
-        ...attendanceData.checked_in.map(student => ({ ...student, status: student.status }))
-      ];
-
-      setAllStudents(allStudentsData);
-      setCheckedInList(attendanceData.checked_in.map(student => ({
+      setAllStudents(attendanceData);
+      setCheckedInList(attendanceData.filter(student => student.status !== 'missing').map(student => ({
         name: student.name,
-        time: new Date(student.checked_in_at),
-        status: student.status === 'present' ? 'Present' : student.status === 'late' ? 'Late' : 'Checked In',
-        is_registered: student.is_registered
+        time: student.checked_in_at ? new Date(student.checked_in_at) : new Date(),
+        status: student.status === 'present' ? 'Present' : student.status === 'late' ? 'Late' : 'Checked In'
       })));
     } catch (err) {
       setError('Failed to fetch students');
@@ -338,8 +347,12 @@ export default function CoachAttendance() {
   };
 
   const handleStartScanning = async () => {
-    if (!date || !selectedType) {
-      setError('Please select a date and class type.');
+    if (!selectedPackage) {
+      setError('Please select a package first');
+      return;
+    }
+    if (!selectedClass) {
+      setError('Please select a class first');
       return;
     }
     setError('');
@@ -365,52 +378,34 @@ export default function CoachAttendance() {
   };
 
   const handleManualAttendance = async () => {
-    if (!date || !selectedType) {
-      setError('Please select a date and class type first.');
+    if (!selectedClass) {
+      setError('Please select a class first');
       return;
     }
     setError('');
-    try {
-      // Get or create class for this date and class type
-      const response = await fetch(`${API_BASE_URL}/classes/by_type`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date, class_type_id: selectedType })
-      });
-      if (!response.ok) throw new Error('Failed to get or create class');
-      const classObj = await response.json();
-      setSelectedClass(classObj.id);
-      setShowManualAttendance(true);
-      fetchUncheckedStudents();
-    } catch (err) {
-      setError('Failed to get or create class.');
-    }
+    setShowManualAttendance(true);
+    fetchUncheckedStudents();
   };
 
   // New function to mark student as present
   const markStudentPresent = async (userId, userName) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/attendance/manual/${selectedClass}/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/attendance/mark`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          class_id: selectedClass,
+          user_id: userId,
+          status: 'present'
+        })
       });
       
       if (!response.ok) throw new Error('Failed to mark attendance');
       const result = await response.json();
       
-      if (result.success) {
-        // Add to attendance list
-        setCheckedInList(list => [...list, { 
-          name: result.user_name, 
-          time: new Date(),
-          status: 'Present',
-          is_registered: result.is_registered,
-          registration_message: result.registration_message
-        }]);
-        
-        // Refresh the student list
-        fetchAllStudentsForClass();
-      }
+      // Refresh the student list
+      fetchAllStudentsForClass();
+      setSuccessMessage(`${userName} marked as present`);
     } catch (err) {
       setError('Failed to mark attendance');
       console.error('Error marking attendance:', err);
@@ -420,26 +415,22 @@ export default function CoachAttendance() {
   // New function to mark student as late
   const markStudentLate = async (userId, userName) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/attendance/${selectedClass}/${userId}/status?status=late`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' }
+      const response = await fetch(`${API_BASE_URL}/attendance/mark`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          class_id: selectedClass,
+          user_id: userId,
+          status: 'late'
+        })
       });
       
       if (!response.ok) throw new Error('Failed to mark attendance');
       const result = await response.json();
       
-      if (result.success) {
-        // Add to attendance list
-        setCheckedInList(list => [...list, { 
-          name: result.user_name, 
-          time: new Date(),
-          status: 'Late',
-          is_registered: true
-        }]);
-        
-        // Refresh the student list
-        fetchAllStudentsForClass();
-      }
+      // Refresh the student list
+      fetchAllStudentsForClass();
+      setSuccessMessage(`${userName} marked as late`);
     } catch (err) {
       setError('Failed to mark attendance');
       console.error('Error marking attendance:', err);
@@ -449,18 +440,21 @@ export default function CoachAttendance() {
   // New function to mark student as absent
   const markStudentAbsent = async (userId, userName) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/attendance/${selectedClass}/${userId}/status?status=missing`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' }
+      const response = await fetch(`${API_BASE_URL}/attendance/mark`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          class_id: selectedClass,
+          user_id: userId,
+          status: 'missing'
+        })
       });
       
       if (!response.ok) throw new Error('Failed to mark attendance');
-      const result = await response.json();
       
-      if (result.success) {
-        // Refresh the student list
-        fetchAllStudentsForClass();
-      }
+      // Refresh the student list
+      fetchAllStudentsForClass();
+      setSuccessMessage(`${userName} marked as absent`);
     } catch (err) {
       setError('Failed to mark attendance');
       console.error('Error marking attendance:', err);
@@ -470,54 +464,21 @@ export default function CoachAttendance() {
   // New function to update student status
   const updateStudentStatus = async (userId, status) => {
     try {
-      // Find the first visible student in the list before update
-      const entries = Object.entries(studentRefs.current);
-      let firstVisible = null;
-      for (let [id, el] of entries) {
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          if (rect.bottom > 0) { // visible in viewport
-            firstVisible = { id, offset: rect.top };
-            break;
-          }
-        }
-      }
-      if (firstVisible) {
-        scrollAnchorRef.current = firstVisible;
-      } else {
-        scrollAnchorRef.current = { id: null, offset: 0 };
-      }
-      const response = await fetch(`${API_BASE_URL}/attendance/${selectedClass}/${userId}/status?status=${status}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' }
+      const response = await fetch(`${API_BASE_URL}/attendance/mark`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          class_id: selectedClass,
+          user_id: userId,
+          status: status
+        })
       });
       
       if (!response.ok) throw new Error('Failed to update attendance');
-      const result = await response.json();
       
-      if (result.success) {
-        setLastEditedId(userId); // Track the edited student
-        setAllStudents(students => {
-          const updated = students.map(s =>
-            s.id === userId ? { ...s, status } : s
-          );
-          // Sort: unchecked first, then present, then late, then missing
-          return updated.sort((a, b) => {
-            const order = {
-              'unchecked': 0,
-              'present': 1,
-              'late': 2,
-              'missing': 3
-            };
-            return (order[a.status] ?? 99) - (order[b.status] ?? 99);
-          });
-        });
-        setCheckedInList(list =>
-          list.map(s =>
-            s.id === userId ? { ...s, status: status === 'present' ? 'Present' : status.charAt(0).toUpperCase() + status.slice(1) } : s
-          )
-        );
-      }
+      // Refresh the student list
+      fetchAllStudentsForClass();
+      setSuccessMessage(`Student status updated to ${status}`);
     } catch (err) {
       setError('Failed to update attendance');
       console.error('Error updating attendance:', err);
@@ -526,30 +487,24 @@ export default function CoachAttendance() {
 
   const markStudentAttendance = async (userId, userName) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/attendance/manual/${selectedClass}/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/attendance/mark`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          class_id: selectedClass,
+          user_id: userId,
+          status: 'present'
+        })
       });
       
       if (!response.ok) throw new Error('Failed to mark attendance');
-      const result = await response.json();
       
-      if (result.success) {
-        // Add to attendance list
-        setCheckedInList(list => [...list, { 
-          name: result.user_name, 
-          time: new Date(),
-          status: 'Manually Marked',
-          is_registered: result.is_registered,
-          registration_message: result.registration_message
-        }]);
-        
-        // Remove from unchecked list
-        setUncheckedStudents(students => students.filter(s => s.id !== userId));
-        
-        // Refresh the student list
-        fetchAllStudentsForClass();
-      }
+      // Remove from unchecked list
+      setUncheckedStudents(students => students.filter(s => s.id !== userId));
+      
+      // Refresh the student list
+      fetchAllStudentsForClass();
+      setSuccessMessage(`${userName} marked as present`);
     } catch (err) {
       setError('Failed to mark attendance');
       console.error('Error marking attendance:', err);
@@ -570,20 +525,19 @@ export default function CoachAttendance() {
         headers: { 'Content-Type': 'application/json' }
       });
       if (!response.ok) throw new Error('Failed to uncheck attendance');
-      const result = await response.json();
-      if (result.success) {
-        // Remove this specific user's QR data from the scanned names set
-        // QR data format is "user_id:user_name", so we can find and remove entries that start with this user_id
-        const userIdStr = userId.toString();
-        for (const qrData of scannedNamesRef.current) {
-          if (qrData.startsWith(userIdStr + ':')) {
-            scannedNamesRef.current.delete(qrData);
-            break;
-          }
+      
+      // Remove this specific user's QR data from the scanned names set
+      // QR data format is "user_id:user_name", so we can find and remove entries that start with this user_id
+      const userIdStr = userId.toString();
+      for (const qrData of scannedNamesRef.current) {
+        if (qrData.startsWith(userIdStr + ':')) {
+          scannedNamesRef.current.delete(qrData);
+          break;
         }
-        // Refresh the student list
-        fetchAllStudentsForClass();
       }
+      // Refresh the student list
+      fetchAllStudentsForClass();
+      setSuccessMessage('Student attendance unchecked');
     } catch (err) {
       setError('Failed to uncheck attendance');
       console.error('Error unchecking attendance:', err);
@@ -643,8 +597,10 @@ export default function CoachAttendance() {
           <TextField
             label="Date"
             type="date"
-            value={date}
-            onChange={e => setDate(e.target.value)}
+            value={new Date().toISOString().split('T')[0]}
+            onChange={e => {
+              // Handle date change
+            }}
             fullWidth
             InputLabelProps={{ shrink: true, sx: { color: '#bdbdbd' } }}
             InputProps={{
@@ -667,15 +623,43 @@ export default function CoachAttendance() {
           '& .MuiInputLabel-root': { color: '#bdbdbd' },
           '& .MuiSelect-icon': { color: '#fff' },
         }} disabled={packages.length === 0}>
-          <InputLabel>Class Type</InputLabel>
+          <InputLabel>Package</InputLabel>
           <Select
-            value={selectedType}
-            label="Class Type"
-            onChange={e => setSelectedType(e.target.value)}
+            value={selectedPackage}
+            label="Package"
+            onChange={e => setSelectedPackage(e.target.value)}
             sx={{ color: '#fff' }}
           >
             {packages.map(pkg => (
-              <MenuItem key={pkg.id} value={pkg.class_type_id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>{pkg.name}</MenuItem>
+              <MenuItem key={pkg.id} value={pkg.id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>{pkg.name}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl fullWidth margin="normal" sx={{
+          '& .MuiInputBase-root': {
+            borderRadius: '12px',
+            background: 'rgba(44, 62, 100, 0.85)',
+            color: '#fff',
+          },
+          '& .MuiInputLabel-root': { color: '#bdbdbd' },
+          '& .MuiSelect-icon': { color: '#fff' },
+        }} disabled={classes.length === 0}>
+          <InputLabel>Class</InputLabel>
+          <Select
+            value={selectedClass || ''}
+            label="Class"
+            onChange={e => {
+              setSelectedClass(e.target.value);
+              if (e.target.value) {
+                fetchAllStudentsForClass(e.target.value);
+              }
+            }}
+            sx={{ color: '#fff' }}
+          >
+            {classes.map(cls => (
+              <MenuItem key={cls.id} value={cls.id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>
+                {new Date(cls.date).toLocaleDateString()}
+              </MenuItem>
             ))}
           </Select>
         </FormControl>
@@ -703,7 +687,7 @@ export default function CoachAttendance() {
               boxShadow: '0 8px 24px 0 rgba(162,89,255,0.28)'
             }
           }}
-          disabled={!date || !selectedType || packages.length === 0}
+          disabled={!selectedPackage || !selectedClass || packages.length === 0}
           onClick={handleStartScanning}
         >
           Start QR Scanning
@@ -848,7 +832,7 @@ export default function CoachAttendance() {
       )}
 
       {/* Student List Section */}
-      {date && selectedType && (
+      {selectedPackage && (
       <Paper elevation={3} sx={{
           width: '100%',
           maxWidth: '100%',
@@ -889,7 +873,7 @@ export default function CoachAttendance() {
             <Typography sx={{ textAlign: 'center', color: '#bdbdbd' }}>Loading students...</Typography>
           ) : filteredStudents.length === 0 ? (
             <Typography sx={{ textAlign: 'center', color: '#bdbdbd' }}>
-              {searchTerm ? 'No students found matching your search.' : 'No students registered for this class.'}
+              {searchTerm ? 'No students found matching your search.' : 'No students registered for this package.'}
             </Typography>
           ) : (
         <List>
@@ -1114,7 +1098,7 @@ export default function CoachAttendance() {
         fullWidth
       >
         <DialogTitle>
-          Manual Attendance - {packages.length > 0 ? packages[0].name : 'Class'} on {date}
+          Manual Attendance - {packages.length > 0 ? packages[0].name : 'Class'} on {new Date().toISOString().split('T')[0]}
         </DialogTitle>
         <DialogContent>
           {loadingUnchecked ? (
