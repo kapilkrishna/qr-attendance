@@ -22,6 +22,9 @@ import {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
+console.log('API_BASE_URL:', API_BASE_URL);
+console.log('VITE_API_BASE_URL env var:', import.meta.env.VITE_API_BASE_URL);
+
 export default function Packages() {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,13 +42,17 @@ export default function Packages() {
 
   const fetchPackages = async () => {
     try {
+      console.log('Fetching packages from:', `${API_BASE_URL}/packages`);
       const response = await fetch(`${API_BASE_URL}/packages`);
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
       if (!response.ok) throw new Error('Failed to fetch packages');
       const data = await response.json();
+      console.log('Packages data:', data);
       setPackages(data);
     } catch (err) {
-      setError('Failed to load packages');
       console.error('Error fetching packages:', err);
+      setError('Failed to load packages');
     } finally {
       setLoading(false);
     }
@@ -105,7 +112,7 @@ export default function Packages() {
           user_id: userId,
           package_id: selectedPackage.id,
           start_date: selectedDay,
-          end_date: selectedDay,
+          end_date: selectedPackage.name === "Elite Summer 2025" ? "2025-08-15" : selectedDay,
           status: 'active'
         })
       });
