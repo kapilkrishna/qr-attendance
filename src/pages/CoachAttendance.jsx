@@ -73,6 +73,7 @@ export default function CoachAttendance() {
 
   // New state for QR scanning status
   const [qrScanStatus, setQrScanStatus] = useState('present');
+  const qrScanStatusRef = useRef('present');
 
   // New state for success message
   const [successMessage, setSuccessMessage] = useState('');
@@ -111,6 +112,10 @@ export default function CoachAttendance() {
       scannedNamesRef.current.clear();
     }
   }, [selectedPackage]);
+
+  useEffect(() => {
+    qrScanStatusRef.current = qrScanStatus;
+  }, [qrScanStatus]);
 
   const fetchPackages = async () => {
     try {
@@ -258,7 +263,7 @@ export default function CoachAttendance() {
                   body: JSON.stringify({
                     qr_data: decodedText,
                     class_id: selectedClass,
-                    status: qrScanStatus
+                    status: qrScanStatusRef.current
                   })
                 });
 
@@ -268,7 +273,7 @@ export default function CoachAttendance() {
                   setCheckedInList(list => [...list, { 
                     name: result.user_name, 
                     time: new Date(),
-                    status: result.already_present ? 'Already Present' : (qrScanStatus === 'present' ? 'Present' : 'Late'),
+                    status: result.already_present ? 'Already Present' : (qrScanStatusRef.current === 'present' ? 'Present' : 'Late'),
                     is_registered: result.is_registered,
                     registration_message: result.registration_message
                   }]);
@@ -277,7 +282,7 @@ export default function CoachAttendance() {
                   
                   // Show success message
                   if (!result.already_present) {
-                    setSuccessMessage(`${result.user_name} marked as ${qrScanStatus === 'present' ? 'Present' : 'Late'}`);
+                    setSuccessMessage(`${result.user_name} marked as ${qrScanStatusRef.current === 'present' ? 'Present' : 'Late'}`);
                     setTimeout(() => setSuccessMessage(''), 3000);
                   }
                   
@@ -902,7 +907,15 @@ export default function CoachAttendance() {
                     )}
                     {/* For unmarked students, always show the three buttons */}
                     {student.status === 'unchecked' ? (
-                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, alignItems: 'stretch', ml: { xs: 0, sm: 3 } }}>
+                      <Box sx={{
+                        display: 'flex',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        gap: 1,
+                        alignItems: 'stretch',
+                        ml: { xs: 0, sm: 3 },
+                        width: { xs: '100%', sm: 'auto' },
+                        justifyContent: { xs: 'center', sm: 'flex-end' },
+                      }}>
                         <Button
                           type="button"
                           variant='outlined'
@@ -912,12 +925,13 @@ export default function CoachAttendance() {
                             color: '#4caf50',
                             fontWeight: 'bold',
                             borderRadius: '8px',
-                            minWidth: { xs: 0, sm: 90 },
+                            minWidth: { xs: '100%', sm: 90 },
                             px: { xs: 1, sm: 3 },
                             width: { xs: '100%', sm: 'auto' },
                             height: 40,
                             display: 'flex',
                             alignItems: 'center',
+                            justifyContent: 'center',
                             '&:hover': { bgcolor: '#45a049', color: '#fff', borderColor: '#45a049' }
                           }}
                           onClick={() => { updateStudentStatus(student.id, 'present'); setMenuOpenId(null); }}
@@ -933,12 +947,13 @@ export default function CoachAttendance() {
                             color: '#ff9800',
                             fontWeight: 'bold',
                             borderRadius: '8px',
-                            minWidth: { xs: 0, sm: 90 },
+                            minWidth: { xs: '100%', sm: 90 },
                             px: { xs: 1, sm: 3 },
                             width: { xs: '100%', sm: 'auto' },
                             height: 40,
                             display: 'flex',
                             alignItems: 'center',
+                            justifyContent: 'center',
                             '&:hover': { bgcolor: '#f57c00', color: '#fff', borderColor: '#f57c00' }
                           }}
                           onClick={() => { updateStudentStatus(student.id, 'late'); setMenuOpenId(null); }}
@@ -954,12 +969,13 @@ export default function CoachAttendance() {
                             color: '#f44336',
                             fontWeight: 'bold',
                             borderRadius: '8px',
-                            minWidth: { xs: 0, sm: 90 },
+                            minWidth: { xs: '100%', sm: 90 },
                             px: { xs: 1, sm: 3 },
                             width: { xs: '100%', sm: 'auto' },
                             height: 40,
                             display: 'flex',
                             alignItems: 'center',
+                            justifyContent: 'center',
                             '&:hover': { bgcolor: '#d32f2f', color: '#fff', borderColor: '#d32f2f' }
                           }}
                           onClick={() => { updateStudentStatus(student.id, 'missing'); setMenuOpenId(null); }}
