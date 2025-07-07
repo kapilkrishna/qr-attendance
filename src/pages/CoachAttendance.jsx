@@ -118,7 +118,7 @@ export default function CoachAttendance() {
       const data = await response.json();
       setPackages(data);
       if (data.length > 0) {
-        setSelectedType(data[0].id);
+        setSelectedType(data[0].class_type_id);
       } else {
         setSelectedType('');
       }
