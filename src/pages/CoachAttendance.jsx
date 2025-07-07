@@ -39,8 +39,6 @@ export default function CoachAttendance() {
   const [isScanning, setIsScanning] = useState(false);
   const [lastScannedName, setLastScannedName] = useState('');
   const [packages, setPackages] = useState([]);
-  const [selectedPackage, setSelectedPackage] = useState('');
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
   const [date, setDate] = useState('');
@@ -90,11 +88,7 @@ export default function CoachAttendance() {
     fetchPackages();
   }, [navigate]);
 
-  useEffect(() => {
-    if (selectedPackage && selectedDate) {
-      fetchClasses();
-    }
-  }, [selectedPackage, selectedDate]);
+
 
   // Auto-load students when date and class type are selected
   useEffect(() => {
@@ -128,22 +122,7 @@ export default function CoachAttendance() {
     }
   };
 
-  const fetchClasses = async () => {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/classes?package_id=${selectedPackage}&date=${selectedDate}`
-      );
-      if (!response.ok) throw new Error('Failed to fetch classes');
-      const data = await response.json();
-      setClasses(data);
-      if (data.length > 0) {
-        setSelectedClass(data[0].id);
-      }
-    } catch (err) {
-      setError('Failed to load classes');
-      console.error('Error fetching classes:', err);
-    }
-  };
+
 
   // New function to fetch all students for a class type and date
   const fetchAllStudentsForClass = async () => {
@@ -696,7 +675,7 @@ export default function CoachAttendance() {
             sx={{ color: '#fff' }}
           >
             {packages.map(pkg => (
-              <MenuItem key={pkg.id} value={pkg.id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>{pkg.name}</MenuItem>
+              <MenuItem key={pkg.id} value={pkg.class_type_id} sx={{ color: '#fff', background: 'rgba(44, 62, 100, 0.98)' }}>{pkg.name}</MenuItem>
             ))}
           </Select>
         </FormControl>
